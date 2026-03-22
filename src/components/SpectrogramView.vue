@@ -8,8 +8,6 @@
  */
 
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { useAudioEngine } from '../composables/useAudioEngine'
-import { useAudioFilePlayer } from '../composables/useAudioFilePlayer'
 import { useSpectrogram } from '../composables/useSpectrogram'
 
 // ── Props ──────────────────────────────────────────────────────────
@@ -37,8 +35,6 @@ const containerRef = ref<HTMLDivElement | null>(null)
 
 // ── Engine state ──────────────────────────────────────────────────
 
-const { isPlaying: enginePlaying } = useAudioEngine()
-const { isPlaying: filePlaying } = useAudioFilePlayer()
 const {
   isSpectrogramActive,
   colorMapName,

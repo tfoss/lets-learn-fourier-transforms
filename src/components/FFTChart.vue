@@ -13,7 +13,7 @@ import type { Peak } from '../types/fft'
 import { useAudioEngine } from '../composables/useAudioEngine'
 import { useAudioFilePlayer } from '../composables/useAudioFilePlayer'
 import { useFFTRenderer } from '../composables/useFFTRenderer'
-import { findPeaks, binToFrequency } from '../utils/fft-analysis'
+import { findPeaks } from '../utils/fft-analysis'
 import { frequencyToX } from '../composables/useFFTRenderer'
 import { MIN_FREQUENCY, MAX_FREQUENCY } from '../utils/audio-math'
 
@@ -71,7 +71,7 @@ const drawOptions = computed(() => ({
   labelColor: '#9ca3af',
 }))
 
-const { drawFFT, startAnimation, stopAnimation, clear, updateOptions } =
+const { drawFFT, updateOptions } =
   useFFTRenderer(canvasRef, drawOptions.value)
 
 // ── Peak state ────────────────────────────────────────────────────

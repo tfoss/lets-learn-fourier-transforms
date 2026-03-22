@@ -102,7 +102,7 @@ function computeGaussianWeight(distance: number, sigma: number): number {
  */
 export function computeInverseFFT(
   magnitudes: Float32Array,
-  sampleRate: number,
+  _sampleRate: number,
   fftSize: number,
 ): Float32Array {
   const real = new Float32Array(fftSize)

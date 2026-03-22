@@ -10,7 +10,6 @@
  */
 
 import type { Challenge, ChallengeType, ChallengeDifficulty } from '../types/challenge'
-import { frequencyToNoteName, noteNameToFrequency } from './audio-math'
 
 // ── Constants ──────────────────────────────────────────────────────
 

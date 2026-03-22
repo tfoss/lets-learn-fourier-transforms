@@ -39,7 +39,7 @@ const {
   isTrackPlaying,
 } = useAudioEngine()
 
-const { currentStep, isComplete } = useGuidedMode()
+const { isComplete } = useGuidedMode()
 
 /** Current number of tracks. */
 const trackCount = computed(() => tracks.value.length)

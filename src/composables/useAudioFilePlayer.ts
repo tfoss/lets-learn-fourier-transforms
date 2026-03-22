@@ -92,7 +92,7 @@ function stopPlayback(): void {
  */
 function createSourceNode(
   buffer: AudioBuffer,
-  offset: number,
+  _offset: number,
 ): AudioBufferSourceNode {
   const ctx = getSharedContext()
   const engine = useAudioEngine()

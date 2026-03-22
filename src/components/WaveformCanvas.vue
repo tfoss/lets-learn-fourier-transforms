@@ -161,8 +161,9 @@ watchEffect(() => {
   // Access props to establish reactive dependencies
   const data = props.data
   const animated = props.animated
-  const _color = props.color
-  const _lineWidth = props.lineWidth
+  // Access color and lineWidth to establish reactive dependencies
+  void props.color
+  void props.lineWidth
 
   if (!animated && canvasRef.value && data) {
     nextTick(() => renderFrame())
