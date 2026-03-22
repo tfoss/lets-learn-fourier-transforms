@@ -8,6 +8,7 @@
  */
 
 import { computed } from 'vue'
+import { PopoverRoot, PopoverTrigger, PopoverContent, PopoverPortal } from 'radix-vue'
 import type { AppMode } from '../types/ui'
 import type { TrackConfig, TrackId } from '../types/audio'
 import { useAudioEngine } from '../composables/useAudioEngine'
@@ -17,6 +18,7 @@ import MasterControls from './MasterControls.vue'
 import TimeScaleControl from './TimeScaleControl.vue'
 import TrackRow from './TrackRow.vue'
 import SuperpositionWaveform from './SuperpositionWaveform.vue'
+import SaveLoadPanel from './SaveLoadPanel.vue'
 
 /** Maximum number of tracks allowed. */
 const MAX_TRACKS = 8
@@ -101,6 +103,25 @@ function onRemove(id: TrackId): void {
       <div class="flex items-center gap-4">
         <MasterControls class="flex-1" />
         <TimeScaleControl />
+        <PopoverRoot>
+          <PopoverTrigger
+            class="rounded bg-gray-700 px-3 py-1.5 text-sm font-medium text-gray-300 hover:bg-gray-600 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            data-testid="save-load-btn"
+          >
+            Save/Load
+          </PopoverTrigger>
+          <PopoverPortal>
+            <PopoverContent
+              class="w-80 max-h-96 overflow-y-auto rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-xl"
+              :side-offset="8"
+              side="bottom"
+              align="end"
+              data-testid="save-load-popover"
+            >
+              <SaveLoadPanel />
+            </PopoverContent>
+          </PopoverPortal>
+        </PopoverRoot>
       </div>
 
       <!-- Add Track bar (sandbox only) -->
