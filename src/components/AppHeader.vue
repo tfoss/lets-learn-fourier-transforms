@@ -5,12 +5,24 @@
  * Displays the app title, current mode indicator with toggle,
  * optional guided-mode progress, and a help button for the glossary.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { SwitchRoot, SwitchThumb, PopoverRoot, PopoverTrigger, PopoverContent, PopoverPortal } from 'radix-vue'
 import type { AppMode } from '../types/ui'
-import AudioFilePanel from './AudioFilePanel.vue'
+import AudioFileUpload from './AudioFileUpload.vue'
 import MicrophoneButton from './MicrophoneButton.vue'
 import ChallengeButton from './ChallengeButton.vue'
+import { useAudioFilePlayer } from '../composables/useAudioFilePlayer'
+
+const audioPopoverOpen = ref(false)
+const { audioBuffer } = useAudioFilePlayer()
+
+/**
+ * Handles a file loaded from the upload component.
+ * Closes the popover so the FFT panel is visible during playback.
+ */
+function onFileLoaded(): void {
+  audioPopoverOpen.value = false
+}
 
 const props = defineProps<{
   /** Current application mode. */
@@ -105,12 +117,13 @@ function handleOpenGlossary(): void {
       <MicrophoneButton />
 
       <!-- Audio menu popover -->
-      <PopoverRoot>
+      <PopoverRoot v-model:open="audioPopoverOpen">
         <PopoverTrigger
-          class="rounded-full bg-gray-700 px-3 py-1.5 text-sm font-medium text-blue-300 transition-colors hover:bg-gray-600 hover:text-blue-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          class="rounded-full px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          :class="audioBuffer ? 'bg-green-700 text-green-200 hover:bg-green-600' : 'bg-gray-700 text-blue-300 hover:bg-gray-600 hover:text-blue-200'"
           data-testid="audio-menu-btn"
         >
-          Load Audio
+          {{ audioBuffer ? 'Change Audio' : 'Load Audio' }}
         </PopoverTrigger>
         <PopoverPortal>
           <PopoverContent
@@ -120,7 +133,7 @@ function handleOpenGlossary(): void {
             align="end"
             data-testid="audio-menu-popover"
           >
-            <AudioFilePanel />
+            <AudioFileUpload @file-loaded="onFileLoaded" />
           </PopoverContent>
         </PopoverPortal>
       </PopoverRoot>

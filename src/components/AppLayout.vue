@@ -46,6 +46,9 @@ function handleOpenGlossary(): void {
       @open-glossary="handleOpenGlossary"
     />
 
+    <!-- Optional bar between header and main content (e.g., audio player) -->
+    <slot name="bar" />
+
     <!-- Two-panel grid -->
     <div class="grid flex-1 grid-cols-[7fr_3fr]" data-testid="layout-grid">
       <!-- Left panel: wave tracks (scrollable) -->
