@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "lets_learn_fourier_transforms",
+  "project_id": "805d3f93-68bb-4b55-b284-388e0fd50f63"
+}
