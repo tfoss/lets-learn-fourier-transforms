@@ -2,46 +2,77 @@
 /**
  * Root application component.
  *
- * Wires together the layout, track controls, waveform visualization,
- * and FFT panel. Creates a default track on first load so the app
- * is not empty.
+ * Wires together the layout, guided/sandbox mode wrapper,
+ * and FFT panel. Manages mode switching between guided tutorial
+ * and sandbox exploration.
  */
 
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import AppLayout from './components/AppLayout.vue'
 import ConceptGlossary from './components/ConceptGlossary.vue'
-import MasterControls from './components/MasterControls.vue'
-import TrackControlList from './components/TrackControlList.vue'
-import TrackList from './components/TrackList.vue'
+import GuidedModeWrapper from './components/GuidedModeWrapper.vue'
 import FFTPanel from './components/FFTPanel.vue'
 import type { AppMode } from './types/ui'
 import { useAudioEngine } from './composables/useAudioEngine'
+import { useGuidedMode } from './composables/useGuidedMode'
 
 const mode = ref<AppMode>('sandbox')
 const glossaryOpen = ref(false)
 
 const { tracks, createTrack } = useAudioEngine()
+const { currentStep, totalSteps, startGuidedMode, skipToSandbox } = useGuidedMode()
 
 /**
- * Creates a default 440 Hz sine track if no tracks exist on mount.
+ * Creates a default 440 Hz sine track if no tracks exist on mount
+ * and we are in sandbox mode.
  */
 onMounted(() => {
-  if (tracks.value.length === 0) {
+  if (mode.value === 'sandbox' && tracks.value.length === 0) {
     createTrack({ frequency: 440, amplitude: 0.5, waveformType: 'sine' })
   }
 })
+
+/**
+ * Handles mode changes: starts guided mode or exits to sandbox.
+ *
+ * @param newMode - The new application mode.
+ */
+function handleModeChange(newMode: AppMode): void {
+  mode.value = newMode
+  if (newMode === 'guided') {
+    startGuidedMode()
+  } else {
+    skipToSandbox()
+  }
+}
+
+/**
+ * Watches for guided mode exit (e.g., from completing the tutorial).
+ * Syncs the mode ref when the composable exits guided mode.
+ */
+watch(
+  () => useGuidedMode().isGuidedMode.value,
+  (isGuided) => {
+    if (!isGuided && mode.value === 'guided') {
+      mode.value = 'sandbox'
+      if (tracks.value.length === 0) {
+        createTrack({ frequency: 440, amplitude: 0.5, waveformType: 'sine' })
+      }
+    }
+  },
+)
 </script>
 
 <template>
-  <AppLayout :mode="mode" @update:mode="mode = $event" @open-glossary="glossaryOpen = true">
+  <AppLayout
+    :mode="mode"
+    :guided-step="mode === 'guided' ? currentStep : undefined"
+    :total-steps="mode === 'guided' ? totalSteps : undefined"
+    @update:mode="handleModeChange"
+    @open-glossary="glossaryOpen = true"
+  >
     <template #tracks>
-      <div class="flex flex-col gap-4 p-4">
-        <MasterControls />
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <TrackControlList />
-          <TrackList />
-        </div>
-      </div>
+      <GuidedModeWrapper :mode="mode" />
     </template>
     <template #fft>
       <FFTPanel />

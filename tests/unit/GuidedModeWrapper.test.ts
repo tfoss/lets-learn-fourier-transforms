@@ -1,13 +1,12 @@
 /**
- * Tests for the App root component.
+ * Tests for the GuidedModeWrapper component.
  *
- * Verifies the app layout renders with header, guided mode wrapper,
- * and FFT panel. Tests mode switching between sandbox and guided.
+ * Verifies that the correct content is shown for guided vs sandbox mode.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import App from '../../src/App.vue'
+import GuidedModeWrapper from '../../src/components/GuidedModeWrapper.vue'
 import { useAudioEngine } from '../../src/composables/useAudioEngine'
 import { useGuidedMode } from '../../src/composables/useGuidedMode'
 
@@ -85,7 +84,7 @@ function installMockLocalStorage(): void {
 
 // ── Tests ──────────────────────────────────────────────────────────
 
-describe('App', () => {
+describe('GuidedModeWrapper', () => {
   beforeEach(async () => {
     installMockAudioContext()
     installMockLocalStorage()
@@ -97,42 +96,42 @@ describe('App', () => {
     guided.isComplete.value = false
   })
 
-  it('renders the app layout with header', () => {
-    const wrapper = mount(App)
-    expect(wrapper.text()).toContain('Fourier Explorer')
-  })
-
-  it('starts in sandbox mode', () => {
-    const wrapper = mount(App)
-    expect(wrapper.text()).toContain('Sandbox Mode')
-  })
-
-  it('renders master controls in sandbox mode', () => {
-    const wrapper = mount(App)
-    const masterControls = wrapper.find('[data-testid="master-controls"]')
-    expect(masterControls.exists()).toBe(true)
-  })
-
-  it('renders track control list in sandbox mode', () => {
-    const wrapper = mount(App)
-    const trackControlList = wrapper.find('[data-testid="track-control-list"]')
-    expect(trackControlList.exists()).toBe(true)
-  })
-
-  it('creates a default track on mount in sandbox mode', () => {
-    mount(App)
-    const engine = useAudioEngine()
-    expect(engine.tracks.value.length).toBe(1)
-    expect(engine.tracks.value[0].frequency).toBe(440)
-  })
-
-  it('renders the guided mode wrapper', () => {
-    const wrapper = mount(App)
+  it('renders the wrapper container', () => {
+    const wrapper = mount(GuidedModeWrapper, {
+      props: { mode: 'sandbox' },
+    })
     expect(wrapper.find('[data-testid="guided-mode-wrapper"]').exists()).toBe(true)
   })
 
-  it('shows sandbox content by default', () => {
-    const wrapper = mount(App)
+  it('shows sandbox content when mode is sandbox', () => {
+    const wrapper = mount(GuidedModeWrapper, {
+      props: { mode: 'sandbox' },
+    })
     expect(wrapper.find('[data-testid="sandbox-content"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="guided-step-view"]').exists()).toBe(false)
+  })
+
+  it('shows guided step view when mode is guided', () => {
+    const guided = useGuidedMode()
+    guided.startGuidedMode()
+    const wrapper = mount(GuidedModeWrapper, {
+      props: { mode: 'guided' },
+    })
+    expect(wrapper.find('[data-testid="guided-step-view"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="sandbox-content"]').exists()).toBe(false)
+  })
+
+  it('sandbox content includes master controls', () => {
+    const wrapper = mount(GuidedModeWrapper, {
+      props: { mode: 'sandbox' },
+    })
+    expect(wrapper.find('[data-testid="master-controls"]').exists()).toBe(true)
+  })
+
+  it('sandbox content includes track control list', () => {
+    const wrapper = mount(GuidedModeWrapper, {
+      props: { mode: 'sandbox' },
+    })
+    expect(wrapper.find('[data-testid="track-control-list"]').exists()).toBe(true)
   })
 })
