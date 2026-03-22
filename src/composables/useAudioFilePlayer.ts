@@ -37,7 +37,11 @@ let animationFrameId: number | null = null
  */
 function getSharedContext(): AudioContext {
   const engine = useAudioEngine()
-  return engine.getAudioContext()
+  const ctx = engine.getAudioContext()
+  if (ctx.state === 'suspended') {
+    ctx.resume()
+  }
+  return ctx
 }
 
 /**
