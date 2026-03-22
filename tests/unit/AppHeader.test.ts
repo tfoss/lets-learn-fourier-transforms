@@ -2,6 +2,10 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AppHeader from '../../src/components/AppHeader.vue'
 
+// Provide build-time constants
+vi.stubGlobal('__APP_VERSION__', '0.1.0')
+vi.stubGlobal('__GIT_HASH__', 'abc1234')
+
 // Mock the composable used by AudioFilePanel so it doesn't need real AudioContext
 vi.mock('../../src/composables/useAudioFilePlayer', () => ({
   useAudioFilePlayer: () => ({
@@ -93,5 +97,14 @@ describe('AppHeader', () => {
     })
     const audioBtn = wrapper.find('[data-testid="audio-menu-btn"]')
     expect(audioBtn.exists()).toBe(true)
+  })
+
+  it('displays version and git hash', () => {
+    const wrapper = mount(AppHeader, {
+      props: { mode: 'sandbox' },
+    })
+    const versionInfo = wrapper.find('[data-testid="version-info"]')
+    expect(versionInfo.exists()).toBe(true)
+    expect(versionInfo.text()).toBe('v0.1.0/abc1234')
   })
 })

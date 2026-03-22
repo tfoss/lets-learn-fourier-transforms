@@ -13,6 +13,12 @@ import MicrophoneButton from './MicrophoneButton.vue'
 import ChallengeButton from './ChallengeButton.vue'
 import { useAudioFilePlayer } from '../composables/useAudioFilePlayer'
 
+/** Application version from build-time injection. */
+const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'
+
+/** Short git hash from build-time injection. */
+const gitHash = typeof __GIT_HASH__ !== 'undefined' ? __GIT_HASH__ : 'local'
+
 const audioPopoverOpen = ref(false)
 const { audioBuffer } = useAudioFilePlayer()
 
@@ -70,10 +76,19 @@ function handleOpenGlossary(): void {
     class="flex items-center justify-between bg-gray-800 px-5 py-3 shadow-md"
     role="banner"
   >
-    <!-- App title -->
-    <h1 class="text-lg font-bold tracking-tight text-white sm:text-xl">
-      Fourier Explorer
-    </h1>
+    <!-- App title + version -->
+    <div class="flex items-baseline gap-2">
+      <h1 class="text-lg font-bold tracking-tight text-white sm:text-xl">
+        Fourier Explorer
+      </h1>
+      <span
+        class="text-[10px] text-gray-500 select-all"
+        :title="`Version ${appVersion} (${gitHash})`"
+        data-testid="version-info"
+      >
+        v{{ appVersion }}/{{ gitHash }}
+      </span>
+    </div>
 
     <!-- Controls group -->
     <div class="flex items-center gap-4">
