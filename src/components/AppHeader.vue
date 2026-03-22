@@ -1,0 +1,109 @@
+<script setup lang="ts">
+/**
+ * AppHeader — Top navigation bar for the application.
+ *
+ * Displays the app title, current mode indicator with toggle,
+ * optional guided-mode progress, and a help button for the glossary.
+ */
+import { computed } from 'vue'
+import { SwitchRoot, SwitchThumb } from 'radix-vue'
+import type { AppMode } from '../types/ui'
+
+const props = defineProps<{
+  /** Current application mode. */
+  mode: AppMode
+  /** Current guided-mode step number (1-based). */
+  guidedStep?: number
+  /** Total number of guided-mode steps. */
+  totalSteps?: number
+}>()
+
+const emit = defineEmits<{
+  /** Emitted when the user toggles the mode switch. */
+  'update:mode': [mode: AppMode]
+  /** Emitted when the user clicks the help button. */
+  'open-glossary': []
+}>()
+
+/** Whether guided mode is currently active. */
+const isGuided = computed(() => props.mode === 'guided')
+
+/** Label for the current mode. */
+const modeLabel = computed(() => (isGuided.value ? 'Guided Mode' : 'Sandbox Mode'))
+
+/** Whether to show the step progress indicator. */
+const showProgress = computed(
+  () => isGuided.value && props.guidedStep != null && props.totalSteps != null,
+)
+
+/** Formatted progress text, e.g. "Step 3 of 9". */
+const progressText = computed(() => `Step ${props.guidedStep} of ${props.totalSteps}`)
+
+/** Toggle between guided and sandbox mode. */
+function handleModeToggle(checked: boolean): void {
+  emit('update:mode', checked ? 'guided' : 'sandbox')
+}
+
+/** Emit event to open the glossary panel. */
+function handleOpenGlossary(): void {
+  emit('open-glossary')
+}
+</script>
+
+<template>
+  <header
+    class="flex items-center justify-between bg-gray-800 px-5 py-3 shadow-md"
+    role="banner"
+  >
+    <!-- App title -->
+    <h1 class="text-lg font-bold tracking-tight text-white sm:text-xl">
+      Fourier Explorer
+    </h1>
+
+    <!-- Controls group -->
+    <div class="flex items-center gap-4">
+      <!-- Progress indicator (guided mode only) -->
+      <span
+        v-if="showProgress"
+        class="rounded-full bg-purple-600/20 px-3 py-1 text-xs font-medium text-purple-300"
+        data-testid="progress-indicator"
+      >
+        {{ progressText }}
+      </span>
+
+      <!-- Mode indicator & toggle -->
+      <div class="flex items-center gap-2">
+        <span
+          class="text-sm font-medium"
+          :class="isGuided ? 'text-green-400' : 'text-blue-400'"
+          data-testid="mode-label"
+        >
+          {{ modeLabel }}
+        </span>
+        <SwitchRoot
+          :checked="isGuided"
+          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-800"
+          :class="isGuided ? 'bg-green-500' : 'bg-gray-600'"
+          aria-label="Toggle guided mode"
+          data-testid="mode-toggle"
+          @update:checked="handleModeToggle"
+        >
+          <SwitchThumb
+            class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform"
+            :class="isGuided ? 'translate-x-5' : 'translate-x-0'"
+          />
+        </SwitchRoot>
+      </div>
+
+      <!-- Help / glossary button -->
+      <button
+        class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-700 text-sm font-bold text-blue-300 transition-colors hover:bg-gray-600 hover:text-blue-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        aria-label="Open glossary"
+        data-testid="help-button"
+        @click="handleOpenGlossary"
+      >
+        ?
+      </button>
+    </div>
+  </header>
+</template>
