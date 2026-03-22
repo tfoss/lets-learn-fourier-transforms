@@ -43,6 +43,9 @@
       </span>
     </div>
 
+    <!-- Share button -->
+    <ShareButton />
+
     <!-- Preset selector -->
     <div class="ml-auto flex items-center gap-2">
       <label class="text-xs text-gray-400">Preset</label>
@@ -75,6 +78,7 @@
 import { ref, computed } from 'vue'
 import { useAudioEngine } from '../composables/useAudioEngine'
 import { PRESETS, findPresetByName, applyPreset } from '../utils/presets'
+import ShareButton from './ShareButton.vue'
 
 // ── Audio engine ──────────────────────────────────────────────────
 
