@@ -21,6 +21,9 @@ const DEFAULT_SAMPLE_RATE = 44100
 /** Peak proximity threshold in Hz for removal. */
 const PEAK_REMOVAL_THRESHOLD = 20
 
+/** Target peak amplitude for normalized playback waveforms. */
+const TARGET_AMPLITUDE = 0.8
+
 // ── Composable ─────────────────────────────────────────────────────
 
 /**
@@ -171,7 +174,8 @@ export function useInverseFFT(options?: {
       await ctx.resume()
     }
 
-    const buffer = createAudioBuffer(waveform, ctx)
+    const normalized = normalizeWaveform(waveform, TARGET_AMPLITUDE)
+    const buffer = createAudioBuffer(normalized, ctx)
 
     sourceNode = ctx.createBufferSource()
     sourceNode.buffer = buffer
@@ -246,4 +250,35 @@ export function useInverseFFT(options?: {
  */
 function clampValue(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))
+}
+
+/**
+ * Normalizes a waveform so its peak amplitude matches the target level.
+ *
+ * The IFFT output has very small amplitudes (on the order of 1/N) which
+ * are effectively inaudible. This scales the waveform to a listenable level.
+ *
+ * @param waveform - The raw time-domain samples.
+ * @param targetAmplitude - Desired peak amplitude (0-1).
+ * @returns A new Float32Array scaled to the target amplitude.
+ */
+function normalizeWaveform(
+  waveform: Float32Array,
+  targetAmplitude: number,
+): Float32Array {
+  let maxAmp = 0
+  for (let i = 0; i < waveform.length; i++) {
+    const abs = Math.abs(waveform[i])
+    if (abs > maxAmp) maxAmp = abs
+  }
+
+  if (maxAmp === 0) return new Float32Array(waveform.length)
+
+  const scale = targetAmplitude / maxAmp
+  const normalized = new Float32Array(waveform.length)
+  for (let i = 0; i < waveform.length; i++) {
+    normalized[i] = waveform[i] * scale
+  }
+
+  return normalized
 }

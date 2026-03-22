@@ -32,15 +32,15 @@ const mockResume = vi.fn()
 
 vi.stubGlobal(
   'AudioContext',
-  vi.fn(() => ({
-    state: 'running',
-    resume: mockResume,
-    close: vi.fn(),
-    createBuffer: mockCreateBuffer,
-    createBufferSource: mockCreateBufferSource,
-    destination: {},
-    sampleRate: 44100,
-  })),
+  vi.fn(function (this: Record<string, unknown>) {
+    this.state = 'running'
+    this.resume = mockResume
+    this.close = vi.fn()
+    this.createBuffer = mockCreateBuffer
+    this.createBufferSource = mockCreateBufferSource
+    this.destination = {}
+    this.sampleRate = 44100
+  }),
 )
 
 // ── Tests ─────────────────────────────────────────────────────────
@@ -193,6 +193,48 @@ describe('useInverseFFT', () => {
       isPlaying.value = true
       stopDrawnSound()
       expect(isPlaying.value).toBe(false)
+    })
+  })
+
+  describe('playDrawnSound', () => {
+    it('creates an AudioBuffer with normalized amplitude', async () => {
+      const capturedData: Float32Array[] = []
+      mockCreateBuffer.mockImplementation(
+        (_channels: number, length: number, _rate: number) => {
+          const data = new Float32Array(length)
+          capturedData.push(data)
+          return { getChannelData: () => data }
+        },
+      )
+
+      const { addPeak, playDrawnSound } = useInverseFFT()
+      addPeak(440, 0.8)
+      await playDrawnSound()
+
+      expect(capturedData).toHaveLength(1)
+
+      const buffer = capturedData[0]
+      let maxAmp = 0
+      for (let i = 0; i < buffer.length; i++) {
+        const abs = Math.abs(buffer[i])
+        if (abs > maxAmp) maxAmp = abs
+      }
+
+      // Normalized waveform should peak near 0.8 (TARGET_AMPLITUDE)
+      expect(maxAmp).toBeCloseTo(0.8, 1)
+    })
+
+    it('sets isPlaying to true', async () => {
+      const { addPeak, playDrawnSound, isPlaying } = useInverseFFT()
+      addPeak(440, 0.8)
+      await playDrawnSound()
+      expect(isPlaying.value).toBe(true)
+    })
+
+    it('does nothing when no peaks exist', async () => {
+      const { playDrawnSound } = useInverseFFT()
+      await playDrawnSound()
+      expect(mockCreateBufferSource).not.toHaveBeenCalled()
     })
   })
 })
