@@ -12,6 +12,7 @@ import type { TrackId } from '../types/audio'
 import type { Peak } from '../types/fft'
 import { useAudioEngine } from '../composables/useAudioEngine'
 import { useAudioFilePlayer } from '../composables/useAudioFilePlayer'
+import { useMicrophone } from '../composables/useMicrophone'
 import { useFFTRenderer } from '../composables/useFFTRenderer'
 import { findPeaks } from '../utils/fft-analysis'
 import { frequencyToX } from '../composables/useFFTRenderer'
@@ -52,9 +53,10 @@ const emit = defineEmits<{
 
 const { tracks, isPlaying, getFFTData } = useAudioEngine()
 const { isPlaying: isFilePlayerPlaying } = useAudioFilePlayer()
+const { isListening: isMicListening } = useMicrophone()
 
-/** Whether any audio source is playing (engine tracks or file player). */
-const isAnyPlaying = computed(() => isPlaying.value || isFilePlayerPlaying.value)
+/** Whether any audio source is active (engine tracks, file player, or mic). */
+const isAnyPlaying = computed(() => isPlaying.value || isFilePlayerPlaying.value || isMicListening.value)
 
 // ── Canvas and renderer ───────────────────────────────────────────
 

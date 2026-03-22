@@ -12,6 +12,7 @@
 import { ref, type Ref } from 'vue'
 import { useAudioEngine } from './useAudioEngine'
 import { useAudioFilePlayer } from './useAudioFilePlayer'
+import { useMicrophone } from './useMicrophone'
 import { normalizeFFTData } from '../utils/fft-analysis'
 import {
   drawSpectrogramColumn,
@@ -50,9 +51,10 @@ function renderFrame(): void {
 
   const engine = useAudioEngine()
   const filePlayer = useAudioFilePlayer()
+  const mic = useMicrophone()
 
-  // Only draw new data if audio is actively playing
-  const audioPlaying = engine.isPlaying.value || filePlayer.isPlaying.value
+  // Only draw new data if any audio source is active
+  const audioPlaying = engine.isPlaying.value || filePlayer.isPlaying.value || mic.isListening.value
 
   if (audioPlaying) {
     const fftData = engine.getFFTData()
