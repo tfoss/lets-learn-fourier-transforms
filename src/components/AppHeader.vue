@@ -10,6 +10,7 @@ import { SwitchRoot, SwitchThumb, PopoverRoot, PopoverTrigger, PopoverContent, P
 import type { AppMode } from '../types/ui'
 import AudioFilePanel from './AudioFilePanel.vue'
 import MicrophoneButton from './MicrophoneButton.vue'
+import ChallengeButton from './ChallengeButton.vue'
 
 const props = defineProps<{
   /** Current application mode. */
@@ -96,6 +97,9 @@ function handleOpenGlossary(): void {
           />
         </SwitchRoot>
       </div>
+
+      <!-- Challenges -->
+      <ChallengeButton />
 
       <!-- Microphone toggle -->
       <MicrophoneButton />
