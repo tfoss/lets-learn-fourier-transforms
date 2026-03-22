@@ -11,6 +11,8 @@ import type { TrackId } from '../types/audio'
 import type { Peak } from '../types/fft'
 import { useAudioEngine } from '../composables/useAudioEngine'
 import FFTChart from './FFTChart.vue'
+import SpectrogramPanel from './SpectrogramPanel.vue'
+import InverseFFTPanel from './InverseFFTPanel.vue'
 
 // ── Emits ─────────────────────────────────────────────────────────
 
@@ -21,6 +23,20 @@ const emit = defineEmits<{
 // ── Audio engine (for track matching) ─────────────────────────────
 
 const { tracks } = useAudioEngine()
+
+// ── Tab state ─────────────────────────────────────────────────────
+
+/** Active tab: 'fft' for FFT view, 'draw' for inverse FFT draw mode. */
+const activeTab = ref<'fft' | 'draw'>('fft')
+
+/**
+ * Switches between FFT view and draw mode tabs.
+ *
+ * @param tab - The tab to activate.
+ */
+function setActiveTab(tab: 'fft' | 'draw'): void {
+  activeTab.value = tab
+}
 
 // ── Controls state ────────────────────────────────────────────────
 
@@ -93,64 +109,90 @@ const scaleLabel = computed(() => (useLogScale.value ? 'Log' : 'Linear'))
 
 <template>
   <div class="fft-panel flex flex-col h-full bg-gray-900 text-gray-200">
-    <!-- Title -->
-    <div class="px-4 py-3 border-b border-gray-700">
-      <h2 class="text-sm font-semibold text-gray-100">
-        Frequency Domain (FFT)
-      </h2>
-    </div>
-
-    <!-- Controls -->
-    <div class="flex items-center gap-2 px-4 py-2 border-b border-gray-700">
+    <!-- Tab switcher -->
+    <div class="flex border-b border-gray-700">
       <button
-        class="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 transition-colors"
-        :class="{ 'bg-blue-600 hover:bg-blue-500': useLogScale }"
-        @click="toggleScale"
+        class="flex-1 px-4 py-3 text-sm font-semibold transition-colors"
+        :class="activeTab === 'fft'
+          ? 'text-gray-100 border-b-2 border-blue-500'
+          : 'text-gray-400 hover:text-gray-200'"
+        @click="setActiveTab('fft')"
       >
-        {{ scaleLabel }}
+        FFT View
       </button>
       <button
-        class="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 transition-colors"
-        :class="{ 'bg-blue-600 hover:bg-blue-500': showPeaks }"
-        @click="togglePeaks"
+        class="flex-1 px-4 py-3 text-sm font-semibold transition-colors"
+        :class="activeTab === 'draw'
+          ? 'text-gray-100 border-b-2 border-amber-500'
+          : 'text-gray-400 hover:text-gray-200'"
+        @click="setActiveTab('draw')"
       >
-        Peaks
-      </button>
-      <button
-        class="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 transition-colors"
-        :class="{ 'bg-blue-600 hover:bg-blue-500': showNoteLabels }"
-        @click="toggleNoteLabels"
-      >
-        Notes
+        Draw Mode
       </button>
     </div>
 
-    <!-- Chart -->
-    <div class="flex-1 px-2 py-2">
-      <FFTChart
-        :height="300"
-        :use-log-scale="useLogScale"
-        :show-peaks="showPeaks"
-        :show-note-labels="showNoteLabels"
-        @peak-hover="onPeakHover"
-      />
-    </div>
+    <!-- FFT View tab content -->
+    <template v-if="activeTab === 'fft'">
+      <!-- Controls -->
+      <div class="flex items-center gap-2 px-4 py-2 border-b border-gray-700">
+        <button
+          class="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 transition-colors"
+          :class="{ 'bg-blue-600 hover:bg-blue-500': useLogScale }"
+          @click="toggleScale"
+        >
+          {{ scaleLabel }}
+        </button>
+        <button
+          class="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 transition-colors"
+          :class="{ 'bg-blue-600 hover:bg-blue-500': showPeaks }"
+          @click="togglePeaks"
+        >
+          Peaks
+        </button>
+        <button
+          class="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 transition-colors"
+          :class="{ 'bg-blue-600 hover:bg-blue-500': showNoteLabels }"
+          @click="toggleNoteLabels"
+        >
+          Notes
+        </button>
+      </div>
 
-    <!-- Hovered peak info -->
-    <div class="px-4 py-2 border-t border-gray-700 min-h-[48px]">
-      <template v-if="hoveredPeak">
-        <p class="text-xs text-gray-300">
-          <span class="font-semibold text-gray-100">
-            {{ hoveredPeak.noteName }}
-          </span>
-          &mdash;
-          {{ hoveredPeak.frequency.toFixed(1) }} Hz
-          ({{ hoveredPeak.magnitude.toFixed(1) }} dB)
-        </p>
-      </template>
-      <template v-else>
-        <p class="text-xs text-gray-500">Hover a peak for details</p>
-      </template>
-    </div>
+      <!-- Chart -->
+      <div class="flex-1 px-2 py-2">
+        <FFTChart
+          :height="300"
+          :use-log-scale="useLogScale"
+          :show-peaks="showPeaks"
+          :show-note-labels="showNoteLabels"
+          @peak-hover="onPeakHover"
+        />
+      </div>
+
+      <!-- Hovered peak info -->
+      <div class="px-4 py-2 border-t border-gray-700 min-h-[48px]">
+        <template v-if="hoveredPeak">
+          <p class="text-xs text-gray-300">
+            <span class="font-semibold text-gray-100">
+              {{ hoveredPeak.noteName }}
+            </span>
+            &mdash;
+            {{ hoveredPeak.frequency.toFixed(1) }} Hz
+            ({{ hoveredPeak.magnitude.toFixed(1) }} dB)
+          </p>
+        </template>
+        <template v-else>
+          <p class="text-xs text-gray-500">Hover a peak for details</p>
+        </template>
+      </div>
+
+      <!-- Spectrogram section -->
+      <SpectrogramPanel />
+    </template>
+
+    <!-- Draw Mode tab content -->
+    <template v-if="activeTab === 'draw'">
+      <InverseFFTPanel />
+    </template>
   </div>
 </template>

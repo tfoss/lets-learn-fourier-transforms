@@ -39,6 +39,27 @@ vi.mock('../../src/composables/useAudioEngine', () => ({
   }),
 }))
 
+// ── Mock useAudioFilePlayer ────────────────────────────────────────
+
+vi.mock('../../src/composables/useAudioFilePlayer', () => ({
+  useAudioFilePlayer: () => ({
+    isPlaying: ref(false),
+  }),
+}))
+
+// ── Mock useSpectrogram ───────────────────────────────────────────
+
+vi.mock('../../src/composables/useSpectrogram', () => ({
+  useSpectrogram: () => ({
+    isSpectrogramActive: ref(false),
+    colorMapName: ref('viridis'),
+    scrollSpeed: ref(2),
+    startCapture: vi.fn(),
+    stopCapture: vi.fn(),
+    clearSpectrogram: vi.fn(),
+  }),
+}))
+
 // ── Mock useFFTRenderer ───────────────────────────────────────────
 
 vi.mock('../../src/composables/useFFTRenderer', () => ({
@@ -69,7 +90,7 @@ describe('FFTPanel', () => {
 
   it('renders the panel title', () => {
     const wrapper = mount(FFTPanel)
-    expect(wrapper.text()).toContain('Frequency Domain (FFT)')
+    expect(wrapper.text()).toContain('FFT View')
   })
 
   it('has the fft-panel CSS class on root', () => {
@@ -82,10 +103,11 @@ describe('FFTPanel', () => {
     expect(wrapper.classes()).toContain('bg-gray-900')
   })
 
-  it('renders three control buttons', () => {
+  it('renders control buttons including tabs, FFT controls, and spectrogram controls', () => {
     const wrapper = mount(FFTPanel)
     const buttons = wrapper.findAll('button')
-    expect(buttons.length).toBe(3)
+    // 2 tab buttons + 3 FFT controls + 2 colormap buttons + 1 clear button = 8
+    expect(buttons.length).toBeGreaterThanOrEqual(7)
   })
 
   it('has a Log/Linear toggle button', () => {

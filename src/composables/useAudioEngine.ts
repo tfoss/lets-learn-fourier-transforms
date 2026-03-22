@@ -390,12 +390,30 @@ function playTrack(id: TrackId): void {
 
   playingTrackIds.value = new Set([...playingTrackIds.value, id])
 
+  /**
+   * Callback to clean up track state when an oscillator ends.
+   * Removes from playingTrackIds and updates isPlaying if needed.
+   */
+  const onOscillatorEnded = () => {
+    nodes.oscillator = null
+    nodes.isOscillatorStarted = false
+    const next = new Set(playingTrackIds.value)
+    next.delete(id)
+    playingTrackIds.value = next
+    // If no tracks are playing, clear the global flag
+    if (next.size === 0) {
+      isPlaying.value = false
+    }
+  }
+
   // Schedule ADSR envelope on the gain node if enabled
   if (config.envelope.enabled) {
     const ctx = getOrCreateContext()
     const now = ctx.currentTime
     const amp = effectiveAmplitude(config)
     const env = config.envelope
+
+    // Schedule attack -> decay -> sustain -> release
     nodes.gainNode.gain.cancelScheduledValues(now)
     nodes.gainNode.gain.setValueAtTime(0, now)
     nodes.gainNode.gain.linearRampToValueAtTime(amp, now + env.attack)
@@ -403,19 +421,24 @@ function playTrack(id: TrackId): void {
       amp * env.sustain,
       now + env.attack + env.decay,
     )
-    // Sustain holds until release (triggered in stopTrack)
-  }
 
-  if (config.duration > 0) {
+    // Auto-stop: schedule release after a sustain hold period.
+    // Use explicit duration if set, otherwise use a default sustain hold of 1 second.
+    const sustainHold = config.duration > 0 ? config.duration : 1.0
+    const releaseStart = now + env.attack + env.decay + sustainHold
+    const totalDuration = env.attack + env.decay + sustainHold + env.release
+
+    // Ramp sustain level to the release point, then fade to zero
+    nodes.gainNode.gain.setValueAtTime(amp * env.sustain, releaseStart)
+    nodes.gainNode.gain.linearRampToValueAtTime(0, releaseStart + env.release)
+
+    osc.start(0)
+    osc.stop(now + totalDuration)
+    osc.onended = onOscillatorEnded
+  } else if (config.duration > 0) {
     osc.start(0)
     osc.stop(getOrCreateContext().currentTime + config.duration)
-    osc.onended = () => {
-      nodes.oscillator = null
-      nodes.isOscillatorStarted = false
-      const next = new Set(playingTrackIds.value)
-      next.delete(id)
-      playingTrackIds.value = next
-    }
+    osc.onended = onOscillatorEnded
   } else {
     osc.start(0)
   }
@@ -446,17 +469,26 @@ function stopTrack(id: TrackId): void {
     } catch {
       // Already stopped
     }
+    // Clean up state when the release finishes
     nodes.oscillator.onended = () => {
       nodes.oscillator = null
       nodes.isOscillatorStarted = false
+      const next = new Set(playingTrackIds.value)
+      next.delete(id)
+      playingTrackIds.value = next
+      if (next.size === 0) {
+        isPlaying.value = false
+      }
     }
   } else {
     stopOscillator(nodes)
+    const next = new Set(playingTrackIds.value)
+    next.delete(id)
+    playingTrackIds.value = next
+    if (next.size === 0) {
+      isPlaying.value = false
+    }
   }
-
-  const next = new Set(playingTrackIds.value)
-  next.delete(id)
-  playingTrackIds.value = next
 }
 
 /**
@@ -621,5 +653,9 @@ export function useAudioEngine() {
 
     // Cleanup
     cleanup,
+
+    // Internal accessors (for composables that need raw nodes)
+    getAudioContext: getOrCreateContext,
+    getMasterAnalyser,
   }
 }

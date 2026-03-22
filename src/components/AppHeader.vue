@@ -6,8 +6,10 @@
  * optional guided-mode progress, and a help button for the glossary.
  */
 import { computed } from 'vue'
-import { SwitchRoot, SwitchThumb } from 'radix-vue'
+import { SwitchRoot, SwitchThumb, PopoverRoot, PopoverTrigger, PopoverContent, PopoverPortal } from 'radix-vue'
 import type { AppMode } from '../types/ui'
+import AudioFilePanel from './AudioFilePanel.vue'
+import MicrophoneButton from './MicrophoneButton.vue'
 
 const props = defineProps<{
   /** Current application mode. */
@@ -94,6 +96,30 @@ function handleOpenGlossary(): void {
           />
         </SwitchRoot>
       </div>
+
+      <!-- Microphone toggle -->
+      <MicrophoneButton />
+
+      <!-- Audio menu popover -->
+      <PopoverRoot>
+        <PopoverTrigger
+          class="rounded-full bg-gray-700 px-3 py-1.5 text-sm font-medium text-blue-300 transition-colors hover:bg-gray-600 hover:text-blue-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          data-testid="audio-menu-btn"
+        >
+          Load Audio
+        </PopoverTrigger>
+        <PopoverPortal>
+          <PopoverContent
+            class="w-96 rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-xl"
+            :side-offset="8"
+            side="bottom"
+            align="end"
+            data-testid="audio-menu-popover"
+          >
+            <AudioFilePanel />
+          </PopoverContent>
+        </PopoverPortal>
+      </PopoverRoot>
 
       <!-- Help / glossary button -->
       <button
