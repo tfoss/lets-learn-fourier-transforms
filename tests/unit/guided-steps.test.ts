@@ -82,17 +82,17 @@ describe('guided-steps', () => {
   })
 
   describe('step definitions', () => {
-    it('defines exactly 9 steps', () => {
-      expect(GUIDED_STEPS.length).toBe(9)
+    it('defines exactly 10 steps', () => {
+      expect(GUIDED_STEPS.length).toBe(10)
     })
 
-    it('TOTAL_GUIDED_STEPS equals 9', () => {
-      expect(TOTAL_GUIDED_STEPS).toBe(9)
+    it('TOTAL_GUIDED_STEPS equals 10', () => {
+      expect(TOTAL_GUIDED_STEPS).toBe(10)
     })
 
-    it('steps are numbered 1 through 9', () => {
+    it('steps are numbered 1 through 10', () => {
       const ids = GUIDED_STEPS.map((s) => s.id)
-      expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+      expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     })
 
     it('every step has a non-empty title', () => {
@@ -158,11 +158,18 @@ describe('guided-steps', () => {
       expect(engine.tracks.value[0].frequency).toBe(440)
     })
 
-    it('step 9 setup clears all tracks', () => {
+    it('step 8 setup applies Piano Strike preset with envelope', () => {
+      GUIDED_STEPS[7].setupFn()
+      const engine = useAudioEngine()
+      expect(engine.tracks.value.length).toBeGreaterThan(0)
+      expect(engine.tracks.value[0].frequency).toBe(440)
+    })
+
+    it('step 10 setup clears all tracks', () => {
       const engine = useAudioEngine()
       engine.createTrack({ frequency: 100 })
       expect(engine.tracks.value.length).toBe(1)
-      GUIDED_STEPS[8].setupFn()
+      GUIDED_STEPS[9].setupFn()
       expect(engine.tracks.value.length).toBe(0)
     })
 
@@ -183,12 +190,12 @@ describe('guided-steps', () => {
 
     it('returns undefined for an out-of-range ID', () => {
       expect(getGuidedStep(0)).toBeUndefined()
-      expect(getGuidedStep(10)).toBeUndefined()
+      expect(getGuidedStep(11)).toBeUndefined()
       expect(getGuidedStep(-1)).toBeUndefined()
     })
 
-    it('returns step 9 correctly', () => {
-      const step = getGuidedStep(9)
+    it('returns step 10 correctly', () => {
+      const step = getGuidedStep(10)
       expect(step).toBeDefined()
       expect(step!.title).toBe('Load Real Audio')
     })

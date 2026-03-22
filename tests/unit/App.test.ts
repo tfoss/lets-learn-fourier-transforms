@@ -131,8 +131,8 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="guided-mode-wrapper"]').exists()).toBe(true)
   })
 
-  it('shows sandbox content by default', () => {
+  it('shows master controls in sandbox mode by default', () => {
     const wrapper = mount(App)
-    expect(wrapper.find('[data-testid="sandbox-content"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="master-controls"]').exists()).toBe(true)
   })
 })

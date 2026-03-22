@@ -246,9 +246,9 @@ describe('useGuidedMode', () => {
   })
 
   describe('totalSteps', () => {
-    it('equals 9', () => {
+    it('equals 10', () => {
       const guided = useGuidedMode()
-      expect(guided.totalSteps).toBe(9)
+      expect(guided.totalSteps).toBe(10)
     })
   })
 

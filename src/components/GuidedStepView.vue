@@ -1,18 +1,15 @@
 <script setup lang="ts">
 /**
- * GuidedStepView — Displays the current guided learning step.
+ * GuidedStepView — Tutorial overlay for the guided learning mode.
  *
- * Shows the step title, explanation text, navigation controls,
- * progress indicator, and the relevant interactive audio components
- * for the current step.
+ * Displays progress, step explanation, and navigation controls.
+ * Does NOT render track/audio components — those are shared with
+ * sandbox mode via GuidedModeWrapper.
  */
 
 import { computed } from 'vue'
 import { useGuidedMode } from '../composables/useGuidedMode'
-import MasterControls from './MasterControls.vue'
-import TrackControlList from './TrackControlList.vue'
-import TrackList from './TrackList.vue'
-import AudioFilePanel from './AudioFilePanel.vue'
+import { GUIDED_STEPS } from '../utils/guided-steps'
 import { applyPreset, findPresetByName } from '../utils/presets'
 
 const {
@@ -22,6 +19,7 @@ const {
   isComplete,
   nextStep,
   prevStep,
+  goToStep,
   skipToSandbox,
 } = useGuidedMode()
 
@@ -36,14 +34,8 @@ const progressPercent = computed(() =>
   Math.round((currentStep.value / totalSteps) * 100),
 )
 
-/** Whether to show track controls (steps 1-6). */
-const showTrackControls = computed(() => currentStep.value <= 6)
-
 /** Whether to show preset comparison buttons (step 7). */
 const showPresetComparison = computed(() => currentStep.value === 7)
-
-/** Whether to show the audio file panel (step 9). */
-const showAudioFilePanel = computed(() => currentStep.value === 9)
 
 /**
  * Switches to a named preset for comparison in step 7.
@@ -59,7 +51,7 @@ function switchPreset(presetName: string): void {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 p-4" data-testid="guided-step-view">
+  <div class="flex flex-col gap-4" data-testid="guided-step-view">
     <!-- Completion message -->
     <div
       v-if="isComplete"
@@ -97,19 +89,27 @@ function switchPreset(presetName: string): void {
             data-testid="progress-bar-fill"
           />
         </div>
-        <!-- Step dots -->
-        <div class="flex justify-center gap-1.5">
-          <span
+        <!-- Step dots (clickable) -->
+        <div class="flex justify-center gap-2">
+          <button
             v-for="step in totalSteps"
             :key="step"
-            class="h-2 w-2 rounded-full transition-colors"
-            :class="step <= currentStep ? 'bg-purple-400' : 'bg-gray-600'"
+            class="h-3 w-3 rounded-full transition-all duration-150 cursor-pointer hover:ring-2 hover:ring-purple-300/50"
+            :class="[
+              step === currentStep
+                ? 'bg-purple-400 ring-2 ring-purple-300'
+                : step < currentStep
+                  ? 'bg-purple-400/60 hover:bg-purple-300'
+                  : 'bg-gray-600 hover:bg-gray-400',
+            ]"
             :data-testid="`step-dot-${step}`"
+            :title="`Step ${step}: ${GUIDED_STEPS[step - 1]?.title ?? ''}`"
+            @click="goToStep(step)"
           />
         </div>
       </div>
 
-      <!-- Step header -->
+      <!-- Step explanation -->
       <div
         class="rounded-xl border border-purple-600/30 bg-purple-900/10 p-5"
         data-testid="step-content"
@@ -125,56 +125,32 @@ function switchPreset(presetName: string): void {
         </p>
       </div>
 
-      <!-- Interactive area -->
-      <div class="flex flex-col gap-4">
-        <!-- Master playback controls (always shown) -->
-        <MasterControls />
-
-        <!-- Track controls (steps 1-6) -->
-        <div v-if="showTrackControls" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <TrackControlList />
-          <TrackList />
-        </div>
-
-        <!-- Preset comparison buttons (step 7) -->
-        <div
-          v-if="showPresetComparison"
-          class="flex flex-col gap-3"
-          data-testid="preset-comparison"
+      <!-- Preset comparison buttons (step 7 only) -->
+      <div
+        v-if="showPresetComparison"
+        class="flex items-center gap-3"
+        data-testid="preset-comparison"
+      >
+        <span class="text-sm font-medium text-gray-400">Compare:</span>
+        <button
+          class="rounded-lg bg-indigo-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600"
+          data-testid="preset-piano-btn"
+          @click="switchPreset('Piano A4')"
         >
-          <p class="text-sm font-medium text-gray-400">
-            Compare instrument timbres:
-          </p>
-          <div class="flex gap-3">
-            <button
-              class="rounded-lg bg-indigo-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600"
-              data-testid="preset-piano-btn"
-              @click="switchPreset('Piano A4')"
-            >
-              Piano A4
-            </button>
-            <button
-              class="rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-600"
-              data-testid="preset-violin-btn"
-              @click="switchPreset('Violin A4')"
-            >
-              Violin A4
-            </button>
-          </div>
-          <!-- Show the resulting tracks -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <TrackControlList />
-            <TrackList />
-          </div>
-        </div>
-
-        <!-- Audio file panel (step 9) -->
-        <AudioFilePanel v-if="showAudioFilePanel" />
+          Piano A4
+        </button>
+        <button
+          class="rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-600"
+          data-testid="preset-violin-btn"
+          @click="switchPreset('Violin A4')"
+        >
+          Violin A4
+        </button>
       </div>
 
       <!-- Navigation buttons -->
       <div
-        class="flex items-center justify-between border-t border-gray-700 pt-4"
+        class="flex items-center justify-between"
         data-testid="step-navigation"
       >
         <button

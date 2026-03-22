@@ -36,7 +36,7 @@
       :key="track.id"
       :track="track"
       :track-index="index"
-      :is-track-playing="isPlaying"
+      :is-track-playing="isTrackPlaying(track.id)"
       @update-param="onUpdateParam"
       @play="onPlay"
       @stop="onStop"
@@ -67,13 +67,13 @@ const MAX_TRACKS = 8
 
 const {
   tracks,
-  isPlaying,
   resumeContext,
   createTrack,
   removeTrack,
   updateTrackParam,
   playTrack,
   stopTrack,
+  isTrackPlaying,
 } = useAudioEngine()
 
 // ── Computed ──────────────────────────────────────────────────────

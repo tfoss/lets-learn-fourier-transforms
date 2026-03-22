@@ -100,6 +100,15 @@ export const CONCEPTS: ConceptEntry[] = [
     relatedConcepts: ['time-vs-frequency-domain', 'frequency', 'nyquist'],
   },
   {
+    id: 'envelope',
+    title: 'Envelope (ADSR)',
+    shortDescription:
+      'How a sound\'s volume changes over time — the shape of its loudness from start to finish.',
+    fullExplanation:
+      'When you strike a piano key, the sound doesn\'t just appear and disappear instantly. It starts suddenly (attack), gets a bit quieter (decay), holds at a steady level while you hold the key (sustain), and then fades away when you release it (release). This pattern is called an ADSR envelope.\n\nDifferent instruments have different envelopes. A piano has a very fast attack (the hammer hits the string instantly) and a long decay. A violin can have a slow attack (the bow gradually grabs the string) and sustain as long as you keep bowing. A drum has a super fast attack and almost no sustain — it\'s all hit and decay.\n\nThe envelope doesn\'t change the pitch or the type of wave — it only shapes how loud the sound is over time. It\'s a big part of why different instruments feel different, even beyond their harmonics.',
+    relatedConcepts: ['amplitude', 'harmonics'],
+  },
+  {
     id: 'nyquist',
     title: 'Nyquist & Sampling',
     shortDescription:

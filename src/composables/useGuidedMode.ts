@@ -119,6 +119,19 @@ function prevStep(): void {
 }
 
 /**
+ * Jumps directly to a specific step by number.
+ * Runs the setup function for the target step.
+ *
+ * @param step - The 1-based step number to jump to.
+ */
+function goToStep(step: number): void {
+  if (step < 1 || step > TOTAL_GUIDED_STEPS) return
+  currentStep.value = step
+  saveProgress(step)
+  runStepSetup(step)
+}
+
+/**
  * Exits guided mode and switches to sandbox mode.
  * Clears persisted progress.
  */
@@ -173,6 +186,7 @@ export function useGuidedMode() {
     // Navigation
     nextStep,
     prevStep,
+    goToStep,
 
     // Mode management
     skipToSandbox,

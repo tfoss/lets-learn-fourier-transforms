@@ -66,7 +66,7 @@ function applyNamedPreset(name: string): void {
 // ── Step definitions ─────────────────────────────────────────────
 
 /** Total number of guided steps. */
-export const TOTAL_GUIDED_STEPS = 9
+export const TOTAL_GUIDED_STEPS = 10
 
 /** All guided learning steps in order. */
 export const GUIDED_STEPS: readonly GuidedStep[] = [
@@ -172,6 +172,23 @@ export const GUIDED_STEPS: readonly GuidedStep[] = [
   },
   {
     id: 8,
+    title: 'Envelope — How Notes Decay',
+    conceptId: 'envelope',
+    explanation:
+      'Real instruments don\'t just produce a flat, unchanging tone. When you strike a piano key, ' +
+      'the sound starts loud and then fades away. When you pluck a violin string (pizzicato), ' +
+      'you get a quick attack and fast decay. When you bow, the sound sustains as long as you draw the bow. ' +
+      'This shape — how volume changes over time — is called an envelope. ' +
+      'We describe it with four parts: Attack (how fast the sound reaches full volume), ' +
+      'Decay (how fast it drops to the sustain level), Sustain (the steady volume while the note is held), ' +
+      'and Release (how fast it fades to silence). ' +
+      'Try the "Piano Strike" preset — notice how the sound decays naturally, just like a real piano! ' +
+      'Toggle the envelope on/off to hear the difference. Adjust the ADSR sliders to shape the sound.',
+    setupFn: () => applyNamedPreset('Piano Strike'),
+    enabledControls: ['play', 'play-all', 'envelope', 'preset-comparison'],
+  },
+  {
+    id: 9,
     title: 'Introduce FFT',
     conceptId: 'fft',
     explanation:
@@ -187,7 +204,7 @@ export const GUIDED_STEPS: readonly GuidedStep[] = [
     enabledControls: ['play', 'play-all', 'fft'],
   },
   {
-    id: 9,
+    id: 10,
     title: 'Load Real Audio',
     conceptId: 'real-audio',
     explanation:

@@ -50,10 +50,10 @@ describe('ConceptGlossary', () => {
     expect(panel.exists()).toBe(true)
   })
 
-  it('renders all 11 concept titles when open', () => {
+  it('renders all 12 concept titles when open', () => {
     wrapper = mountGlossary(true)
     const text = wrapper.text()
-    expect(CONCEPTS.length).toBe(11)
+    expect(CONCEPTS.length).toBe(12)
     for (const concept of CONCEPTS) {
       expect(text).toContain(concept.title)
     }

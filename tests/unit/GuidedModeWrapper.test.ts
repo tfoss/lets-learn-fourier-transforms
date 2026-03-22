@@ -103,22 +103,22 @@ describe('GuidedModeWrapper', () => {
     expect(wrapper.find('[data-testid="guided-mode-wrapper"]').exists()).toBe(true)
   })
 
-  it('shows sandbox content when mode is sandbox', () => {
+  it('shows track UI without guided overlay when mode is sandbox', () => {
     const wrapper = mount(GuidedModeWrapper, {
       props: { mode: 'sandbox' },
     })
-    expect(wrapper.find('[data-testid="sandbox-content"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="guided-step-view"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="add-track-btn"]').exists()).toBe(true)
   })
 
-  it('shows guided step view when mode is guided', () => {
+  it('shows guided overlay plus shared track UI when mode is guided', () => {
     const guided = useGuidedMode()
     guided.startGuidedMode()
     const wrapper = mount(GuidedModeWrapper, {
       props: { mode: 'guided' },
     })
     expect(wrapper.find('[data-testid="guided-step-view"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="sandbox-content"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="master-controls"]').exists()).toBe(true)
   })
 
   it('sandbox content includes master controls', () => {

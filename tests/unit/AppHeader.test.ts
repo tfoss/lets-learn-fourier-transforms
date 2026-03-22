@@ -1,6 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AppHeader from '../../src/components/AppHeader.vue'
+
+// Mock the composable used by AudioFilePanel so it doesn't need real AudioContext
+vi.mock('../../src/composables/useAudioFilePlayer', () => ({
+  useAudioFilePlayer: () => ({
+    loadAudioFile: vi.fn(),
+  }),
+}))
 
 describe('AppHeader', () => {
   it('renders the app title', () => {
@@ -69,5 +76,22 @@ describe('AppHeader', () => {
     })
     const progress = wrapper.find('[data-testid="progress-indicator"]')
     expect(progress.exists()).toBe(false)
+  })
+
+  it('renders the audio menu button', () => {
+    const wrapper = mount(AppHeader, {
+      props: { mode: 'sandbox' },
+    })
+    const audioBtn = wrapper.find('[data-testid="audio-menu-btn"]')
+    expect(audioBtn.exists()).toBe(true)
+    expect(audioBtn.text()).toBe('Load Audio')
+  })
+
+  it('audio menu button is present in guided mode too', () => {
+    const wrapper = mount(AppHeader, {
+      props: { mode: 'guided' },
+    })
+    const audioBtn = wrapper.find('[data-testid="audio-menu-btn"]')
+    expect(audioBtn.exists()).toBe(true)
   })
 })

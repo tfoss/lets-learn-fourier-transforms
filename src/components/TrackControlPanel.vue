@@ -7,8 +7,7 @@
 -->
 <template>
   <div
-    class="track-control-panel rounded-lg bg-gray-800 p-3"
-    :style="{ borderLeft: `3px solid ${track.color}` }"
+    class="track-control-panel"
     data-testid="track-control-panel"
   >
     <!-- Track header row -->
@@ -36,9 +35,15 @@
     <div class="mb-2">
       <div class="mb-1 flex items-center justify-between">
         <label class="text-xs text-gray-400">Frequency</label>
-        <span class="text-xs text-gray-200" data-testid="frequency-display">
-          {{ formattedFrequency }} Hz — {{ noteName }}
-        </span>
+        <EditableValue
+          :display-value="`${formattedFrequency} Hz — ${noteName}`"
+          :model-value="Math.round(track.frequency)"
+          :min="MIN_FREQUENCY"
+          :max="MAX_FREQUENCY"
+          :step="1"
+          test-id="frequency-display"
+          @update:model-value="emit('update-param', track.id, 'frequency', $event)"
+        />
       </div>
       <input
         type="range"
@@ -55,9 +60,15 @@
     <div class="mb-2">
       <div class="mb-1 flex items-center justify-between">
         <label class="text-xs text-gray-400">Amplitude</label>
-        <span class="text-xs text-gray-200" data-testid="amplitude-display">
-          {{ amplitudePercent }}%
-        </span>
+        <EditableValue
+          :display-value="`${amplitudePercent}%`"
+          :model-value="amplitudePercent"
+          :min="0"
+          :max="100"
+          :step="1"
+          test-id="amplitude-display"
+          @update:model-value="emit('update-param', track.id, 'amplitude', $event / 100)"
+        />
       </div>
       <input
         type="range"
@@ -74,9 +85,15 @@
     <div class="mb-2">
       <div class="mb-1 flex items-center justify-between">
         <label class="text-xs text-gray-400">Phase</label>
-        <span class="text-xs text-gray-200" data-testid="phase-display">
-          {{ phaseDegrees }}°
-        </span>
+        <EditableValue
+          :display-value="`${phaseDegrees}°`"
+          :model-value="phaseDegrees"
+          :min="0"
+          :max="360"
+          :step="1"
+          test-id="phase-display"
+          @update:model-value="emit('update-param', track.id, 'phase', ($event * Math.PI) / 180)"
+        />
       </div>
       <input
         type="range"
@@ -249,12 +266,13 @@
 import { computed } from 'vue'
 import type { TrackConfig, TrackId, WaveformType, EnvelopeConfig } from '../types/audio'
 import { WAVEFORM_TYPES } from '../types/audio'
-import { frequencyToNoteName } from '../utils/audio-math'
+import { frequencyToNoteName, MIN_FREQUENCY, MAX_FREQUENCY } from '../utils/audio-math'
 import {
   frequencyToSliderPosition,
   sliderPositionToFrequency,
   formatFrequency,
 } from '../utils/frequency-scale'
+import EditableValue from './EditableValue.vue'
 
 // ── Props & Emits ─────────────────────────────────────────────────
 

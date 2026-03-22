@@ -128,7 +128,7 @@ describe('GuidedStepView', () => {
     const wrapper = mount(GuidedStepView)
     const progress = wrapper.find('[data-testid="guided-progress"]')
     expect(progress.exists()).toBe(true)
-    expect(progress.text()).toContain('Step 1 of 9')
+    expect(progress.text()).toContain('Step 1 of 10')
   })
 
   it('shows navigation buttons', () => {
@@ -173,7 +173,7 @@ describe('GuidedStepView', () => {
   it('shows Finish on the last step', () => {
     const guided = useGuidedMode()
     guided.startGuidedMode()
-    for (let i = 1; i < 9; i++) {
+    for (let i = 1; i < 10; i++) {
       guided.nextStep()
     }
     const wrapper = mount(GuidedStepView)
