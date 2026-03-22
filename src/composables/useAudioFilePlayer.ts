@@ -28,34 +28,16 @@ let animationFrameId: number | null = null
 // ── Internal helpers ───────────────────────────────────────────────
 
 /**
- * Returns the AudioContext from the audio engine, creating it if needed.
+ * Returns the shared AudioContext from the audio engine.
+ *
+ * Uses the engine's context so that file playback audio flows through
+ * the engine's master analyser, making it visible to FFT and spectrogram.
  *
  * @returns The shared AudioContext.
  */
-function getContext(): AudioContext {
-  // Access the engine to ensure context is initialized
+function getSharedContext(): AudioContext {
   const engine = useAudioEngine()
-  engine.resumeContext()
-  // The engine creates the context lazily; we access it via a
-  // minimal approach: create a temporary track, grab its context, remove it.
-  // Instead, we'll use the standard AudioContext approach and connect
-  // to the engine's master analyser via the engine's getFFTData().
-  // For now, we need the raw context. We'll use a module-level one.
-  return getOrCreateFilePlayerContext()
-}
-
-let filePlayerContext: AudioContext | null = null
-
-/**
- * Lazily creates the file player's AudioContext.
- *
- * @returns The AudioContext.
- */
-function getOrCreateFilePlayerContext(): AudioContext {
-  if (!filePlayerContext) {
-    filePlayerContext = new AudioContext()
-  }
-  return filePlayerContext
+  return engine.getAudioContext()
 }
 
 /**
@@ -64,7 +46,7 @@ function getOrCreateFilePlayerContext(): AudioContext {
 function updateCurrentTime(): void {
   if (!isPlayingRef.value) return
 
-  const ctx = getOrCreateFilePlayerContext()
+  const ctx = getSharedContext()
   currentTimeRef.value = ctx.currentTime - startedAt + pausedAt
 
   if (currentTimeRef.value >= durationRef.value) {
@@ -108,11 +90,13 @@ function createSourceNode(
   buffer: AudioBuffer,
   offset: number,
 ): AudioBufferSourceNode {
-  const ctx = getOrCreateFilePlayerContext()
+  const ctx = getSharedContext()
+  const engine = useAudioEngine()
 
   if (!gainNode) {
     gainNode = ctx.createGain()
-    gainNode.connect(ctx.destination)
+    // Connect through the engine's master analyser so FFT/spectrogram can see the data
+    gainNode.connect(engine.getMasterAnalyser())
   }
 
   const source = ctx.createBufferSource()
@@ -140,7 +124,7 @@ function createSourceNode(
  * @throws {Error} If the file cannot be decoded.
  */
 async function loadAudioFile(file: File): Promise<AudioBuffer> {
-  const ctx = getOrCreateFilePlayerContext()
+  const ctx = getSharedContext()
   const arrayBuffer = await file.arrayBuffer()
   const buffer = await ctx.decodeAudioData(arrayBuffer)
 
@@ -163,7 +147,7 @@ function playAudioBuffer(buffer: AudioBuffer): void {
     stopPlayback()
   }
 
-  const ctx = getOrCreateFilePlayerContext()
+  const ctx = getSharedContext()
 
   sourceNode = createSourceNode(buffer, pausedAt)
   sourceNode.start(0, pausedAt)
@@ -179,7 +163,7 @@ function playAudioBuffer(buffer: AudioBuffer): void {
 function pause(): void {
   if (!isPlayingRef.value) return
 
-  const ctx = getOrCreateFilePlayerContext()
+  const ctx = getSharedContext()
   pausedAt = ctx.currentTime - startedAt + pausedAt
 
   stopPlayback()
@@ -242,11 +226,6 @@ async function cleanupFilePlayer(): Promise<void> {
   if (gainNode) {
     gainNode.disconnect()
     gainNode = null
-  }
-
-  if (filePlayerContext) {
-    await filePlayerContext.close()
-    filePlayerContext = null
   }
 }
 

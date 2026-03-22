@@ -110,6 +110,11 @@ describe('useAudioFilePlayer', () => {
 
     mockCtx = installMockAudioContext()
 
+    // Clean up both engine and file player to reset singleton state
+    const { useAudioEngine } = await import('../../src/composables/useAudioEngine')
+    const engine = useAudioEngine()
+    await engine.cleanup()
+
     const { useAudioFilePlayer } = await import('../../src/composables/useAudioFilePlayer')
     const player = useAudioFilePlayer()
     await player.cleanup()

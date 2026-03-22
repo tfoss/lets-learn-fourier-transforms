@@ -11,6 +11,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import type { TrackId } from '../types/audio'
 import type { Peak } from '../types/fft'
 import { useAudioEngine } from '../composables/useAudioEngine'
+import { useAudioFilePlayer } from '../composables/useAudioFilePlayer'
 import { useFFTRenderer } from '../composables/useFFTRenderer'
 import { findPeaks, binToFrequency } from '../utils/fft-analysis'
 import { frequencyToX } from '../composables/useFFTRenderer'
@@ -50,6 +51,10 @@ const emit = defineEmits<{
 // ── Audio engine ──────────────────────────────────────────────────
 
 const { tracks, isPlaying, getFFTData } = useAudioEngine()
+const { isPlaying: isFilePlayerPlaying } = useAudioFilePlayer()
+
+/** Whether any audio source is playing (engine tracks or file player). */
+const isAnyPlaying = computed(() => isPlaying.value || isFilePlayerPlaying.value)
 
 // ── Canvas and renderer ───────────────────────────────────────────
 
@@ -133,17 +138,17 @@ function renderFrame(): void {
     detectedPeaks.value = []
   }
 
-  if (isPlaying.value) {
+  if (isAnyPlaying.value) {
     rafId = requestAnimationFrame(renderFrame)
   }
 }
 
 /**
- * Starts the animation loop if audio is playing.
+ * Starts the animation loop if any audio is playing.
  */
 function startRendering(): void {
   stopRendering()
-  if (isPlaying.value) {
+  if (isAnyPlaying.value) {
     renderFrame()
   }
 }
@@ -160,7 +165,7 @@ function stopRendering(): void {
 
 // ── Watch play state ──────────────────────────────────────────────
 
-watch(isPlaying, (playing) => {
+watch(isAnyPlaying, (playing) => {
   if (playing) {
     startRendering()
   } else {
