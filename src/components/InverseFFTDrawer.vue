@@ -9,7 +9,7 @@
 
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useInverseFFT } from '../composables/useInverseFFT'
-import { MIN_FREQUENCY, MAX_FREQUENCY } from '../utils/audio-math'
+import { MIN_FREQUENCY, MAX_FREQUENCY, frequencyToNoteName } from '../utils/audio-math'
 
 // ── Constants ──────────────────────────────────────────────────────
 
@@ -44,6 +44,20 @@ const {
   playDrawnSound,
   stopDrawnSound,
 } = useInverseFFT()
+
+// ── Text entry state ──────────────────────────────────────────────
+
+const entryFrequency = ref(440)
+const entryMagnitude = ref(80)
+
+/**
+ * Adds a peak from the text entry fields.
+ */
+function addPeakFromEntry(): void {
+  const freq = Math.max(MIN_FREQUENCY, Math.min(MAX_FREQUENCY, entryFrequency.value))
+  const mag = Math.max(0, Math.min(100, entryMagnitude.value)) / 100
+  addPeak(freq, mag)
+}
 
 // ── Canvas refs ────────────────────────────────────────────────────
 
@@ -401,6 +415,62 @@ onUnmounted(() => {
         :style="{ width: '100%', height: `${WAVEFORM_PREVIEW_HEIGHT}px` }"
         class="block w-full"
       />
+    </div>
+
+    <!-- Text entry for exact frequencies -->
+    <div class="flex items-center gap-2" data-testid="peak-entry-form">
+      <label class="text-xs text-gray-400">Hz:</label>
+      <input
+        v-model.number="entryFrequency"
+        type="number"
+        :min="MIN_FREQUENCY"
+        :max="MAX_FREQUENCY"
+        step="1"
+        class="w-20 rounded bg-gray-700 px-1.5 py-1 text-xs text-gray-100 outline-none ring-1 ring-gray-600 focus:ring-blue-500"
+        data-testid="peak-freq-input"
+        @keydown.enter="addPeakFromEntry"
+      />
+      <label class="text-xs text-gray-400">%:</label>
+      <input
+        v-model.number="entryMagnitude"
+        type="number"
+        min="1"
+        max="100"
+        step="1"
+        class="w-16 rounded bg-gray-700 px-1.5 py-1 text-xs text-gray-100 outline-none ring-1 ring-gray-600 focus:ring-blue-500"
+        data-testid="peak-mag-input"
+        @keydown.enter="addPeakFromEntry"
+      />
+      <button
+        class="px-3 py-1 text-xs font-medium rounded bg-amber-600 hover:bg-amber-500 text-white transition-colors"
+        data-testid="peak-add-btn"
+        @click="addPeakFromEntry"
+      >
+        Add
+      </button>
+    </div>
+
+    <!-- Peak list -->
+    <div
+      v-if="drawnPeaks.length > 0"
+      class="flex flex-wrap gap-1.5"
+      data-testid="peak-list"
+    >
+      <span
+        v-for="(peak, index) in drawnPeaks"
+        :key="index"
+        class="inline-flex items-center gap-1 rounded bg-gray-700 px-2 py-0.5 text-xs text-gray-200"
+      >
+        {{ Math.round(peak.frequency) }} Hz
+        <span class="text-gray-400">({{ frequencyToNoteName(peak.frequency) }})</span>
+        <button
+          class="ml-0.5 text-gray-400 hover:text-red-400 transition-colors"
+          :data-testid="`peak-remove-${index}`"
+          @click="removePeak(index)"
+        >
+          &times;
+        </button>
+      </span>
     </div>
 
     <!-- Controls -->

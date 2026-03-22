@@ -112,4 +112,50 @@ describe('InverseFFTDrawer', () => {
     const drawCanvas = wrapper.findAll('canvas')[0]
     expect(drawCanvas.classes()).toContain('cursor-crosshair')
   })
+
+  it('renders the text entry form', () => {
+    const wrapper = mount(InverseFFTDrawer)
+    expect(wrapper.find('[data-testid="peak-entry-form"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="peak-freq-input"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="peak-mag-input"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="peak-add-btn"]').exists()).toBe(true)
+  })
+
+  it('calls addPeak when Add button is clicked', async () => {
+    const wrapper = mount(InverseFFTDrawer)
+    const freqInput = wrapper.find('[data-testid="peak-freq-input"]')
+    const magInput = wrapper.find('[data-testid="peak-mag-input"]')
+
+    await freqInput.setValue(880)
+    await magInput.setValue(60)
+    await wrapper.find('[data-testid="peak-add-btn"]').trigger('click')
+
+    expect(mockAddPeak).toHaveBeenCalledWith(880, 0.6)
+  })
+
+  it('renders peak list with remove buttons when peaks exist', () => {
+    mockDrawnPeaks.value = [
+      { frequency: 440, magnitude: 0.8 },
+      { frequency: 880, magnitude: 0.5 },
+    ]
+    const wrapper = mount(InverseFFTDrawer)
+    const peakList = wrapper.find('[data-testid="peak-list"]')
+    expect(peakList.exists()).toBe(true)
+    expect(peakList.text()).toContain('440 Hz')
+    expect(peakList.text()).toContain('880 Hz')
+    expect(wrapper.find('[data-testid="peak-remove-0"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="peak-remove-1"]').exists()).toBe(true)
+  })
+
+  it('calls removePeak when peak remove button is clicked', async () => {
+    mockDrawnPeaks.value = [{ frequency: 440, magnitude: 0.8 }]
+    const wrapper = mount(InverseFFTDrawer)
+    await wrapper.find('[data-testid="peak-remove-0"]').trigger('click')
+    expect(mockRemovePeak).toHaveBeenCalledWith(0)
+  })
+
+  it('does not render peak list when no peaks', () => {
+    const wrapper = mount(InverseFFTDrawer)
+    expect(wrapper.find('[data-testid="peak-list"]').exists()).toBe(false)
+  })
 })
