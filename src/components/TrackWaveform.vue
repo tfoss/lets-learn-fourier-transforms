@@ -13,6 +13,7 @@
       :line-width="2"
       :height="120"
       :label="trackLabel"
+      :secondary-label="timeFrameLabel"
       :animated="false"
     />
   </div>
@@ -53,6 +54,20 @@ const trackLabel = computed(() => {
   const displayIndex = props.trackIndex + 1
   const noteName = safeNoteName(props.track.frequency)
   return `Track ${displayIndex} - ${noteName} (${Math.round(props.track.frequency)}Hz)`
+})
+
+/**
+ * Human-readable label for the time window shown in the waveform.
+ * e.g., "23.2 ms" for 1024 samples at 44100 Hz.
+ */
+const timeFrameLabel = computed(() => {
+  const durationSec = STATIC_SAMPLE_COUNT / DEFAULT_SAMPLE_RATE
+  const durationMs = durationSec * 1000
+  if (durationMs >= 1) {
+    return `${durationMs.toFixed(1)} ms`
+  }
+  const durationUs = durationSec * 1_000_000
+  return `${durationUs.toFixed(1)} \u00B5s`
 })
 
 /**

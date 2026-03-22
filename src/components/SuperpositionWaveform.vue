@@ -13,6 +13,7 @@
       :line-width="2.5"
       :height="150"
       label="Combined (Superposition)"
+      :secondary-label="timeFrameLabel"
       :animated="false"
     />
   </div>
@@ -40,6 +41,14 @@ import WaveformCanvas from './WaveformCanvas.vue'
 const STATIC_SAMPLE_COUNT = 1024
 
 const { tracks } = useAudioEngine()
+
+/**
+ * Human-readable label for the time window shown in the waveform.
+ */
+const timeFrameLabel = computed(() => {
+  const durationMs = (STATIC_SAMPLE_COUNT / DEFAULT_SAMPLE_RATE) * 1000
+  return `${durationMs.toFixed(1)} ms`
+})
 
 /**
  * Generates a static superposition of all unmuted track waveforms.

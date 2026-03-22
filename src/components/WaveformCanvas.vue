@@ -19,6 +19,13 @@
     >
       {{ label }}
     </span>
+    <span
+      v-if="secondaryLabel"
+      class="absolute top-2 right-3 text-xs z-10 pointer-events-none text-gray-400"
+      data-testid="waveform-secondary-label"
+    >
+      {{ secondaryLabel }}
+    </span>
     <canvas
       ref="canvasRef"
       class="block w-full h-full"
@@ -54,6 +61,7 @@ const props = withDefaults(
     lineWidth?: number
     height?: number
     label?: string
+    secondaryLabel?: string
     animated?: boolean
   }>(),
   {
@@ -61,6 +69,7 @@ const props = withDefaults(
     lineWidth: 2,
     height: 120,
     label: undefined,
+    secondaryLabel: undefined,
     animated: false,
   },
 )
