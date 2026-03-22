@@ -11,6 +11,29 @@ export type TrackId = string & { readonly __brand: 'TrackId' }
 /** Supported oscillator waveform types. */
 export type WaveformType = 'sine' | 'square' | 'triangle' | 'sawtooth'
 
+/** ADSR envelope configuration. */
+export interface EnvelopeConfig {
+  /** Whether the envelope is enabled. */
+  enabled: boolean
+  /** Attack time in seconds (0-2). Time to reach peak amplitude. */
+  attack: number
+  /** Decay time in seconds (0-2). Time to fall from peak to sustain level. */
+  decay: number
+  /** Sustain level as fraction of amplitude (0-1). Level held during note. */
+  sustain: number
+  /** Release time in seconds (0-2). Time to fade to zero after note ends. */
+  release: number
+}
+
+/** Default ADSR envelope: disabled, with reasonable musical defaults. */
+export const DEFAULT_ENVELOPE: EnvelopeConfig = {
+  enabled: false,
+  attack: 0.01,
+  decay: 0.3,
+  sustain: 0.5,
+  release: 0.3,
+}
+
 /** All valid waveform type values. */
 export const WAVEFORM_TYPES: readonly WaveformType[] = [
   'sine',
@@ -44,6 +67,8 @@ export interface TrackConfig {
   isMuted: boolean
   /** Whether this track is soloed. */
   isSolo: boolean
+  /** ADSR amplitude envelope configuration. */
+  envelope: EnvelopeConfig
 }
 
 /**

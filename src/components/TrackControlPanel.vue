@@ -108,6 +108,97 @@
       </div>
     </div>
 
+    <!-- Envelope (ADSR) section -->
+    <div class="mb-2" data-testid="envelope-section">
+      <div class="mb-1 flex items-center justify-between">
+        <label class="text-xs text-gray-400">Envelope (ADSR)</label>
+        <button
+          class="rounded px-2 py-0.5 text-xs transition-colors"
+          :class="track.envelope.enabled
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+          data-testid="envelope-toggle-btn"
+          @click="onEnvelopeToggle"
+        >
+          {{ track.envelope.enabled ? 'On' : 'Off' }}
+        </button>
+      </div>
+      <div v-if="track.envelope.enabled" class="grid grid-cols-2 gap-x-3 gap-y-1">
+        <!-- Attack -->
+        <div>
+          <div class="flex items-center justify-between">
+            <label class="text-xs text-gray-500">Attack</label>
+            <span class="text-xs text-gray-300" data-testid="envelope-attack-display">
+              {{ track.envelope.attack.toFixed(2) }}s
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="200"
+            :value="Math.round(track.envelope.attack * 100)"
+            class="w-full accent-blue-500"
+            data-testid="envelope-attack-slider"
+            @input="onEnvelopeParamInput($event, 'attack', 100)"
+          />
+        </div>
+        <!-- Decay -->
+        <div>
+          <div class="flex items-center justify-between">
+            <label class="text-xs text-gray-500">Decay</label>
+            <span class="text-xs text-gray-300" data-testid="envelope-decay-display">
+              {{ track.envelope.decay.toFixed(2) }}s
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="200"
+            :value="Math.round(track.envelope.decay * 100)"
+            class="w-full accent-blue-500"
+            data-testid="envelope-decay-slider"
+            @input="onEnvelopeParamInput($event, 'decay', 100)"
+          />
+        </div>
+        <!-- Sustain -->
+        <div>
+          <div class="flex items-center justify-between">
+            <label class="text-xs text-gray-500">Sustain</label>
+            <span class="text-xs text-gray-300" data-testid="envelope-sustain-display">
+              {{ Math.round(track.envelope.sustain * 100) }}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            :value="Math.round(track.envelope.sustain * 100)"
+            class="w-full accent-blue-500"
+            data-testid="envelope-sustain-slider"
+            @input="onEnvelopeParamInput($event, 'sustain', 100)"
+          />
+        </div>
+        <!-- Release -->
+        <div>
+          <div class="flex items-center justify-between">
+            <label class="text-xs text-gray-500">Release</label>
+            <span class="text-xs text-gray-300" data-testid="envelope-release-display">
+              {{ track.envelope.release.toFixed(2) }}s
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="200"
+            :value="Math.round(track.envelope.release * 100)"
+            class="w-full accent-blue-500"
+            data-testid="envelope-release-slider"
+            @input="onEnvelopeParamInput($event, 'release', 100)"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- Playback controls row -->
     <div class="flex items-center gap-2">
       <button
@@ -156,7 +247,7 @@
  */
 
 import { computed } from 'vue'
-import type { TrackConfig, TrackId, WaveformType } from '../types/audio'
+import type { TrackConfig, TrackId, WaveformType, EnvelopeConfig } from '../types/audio'
 import { WAVEFORM_TYPES } from '../types/audio'
 import { frequencyToNoteName } from '../utils/audio-math'
 import {
@@ -250,6 +341,40 @@ function onPhaseInput(event: Event): void {
   const degrees = parseInt(target.value, 10)
   const radians = (degrees * Math.PI) / 180
   emit('update-param', props.track.id, 'phase', radians)
+}
+
+// ── Envelope handlers ─────────────────────────────────────────────
+
+/**
+ * Toggles the envelope enabled state and emits the updated config.
+ */
+function onEnvelopeToggle(): void {
+  const updated: EnvelopeConfig = {
+    ...props.track.envelope,
+    enabled: !props.track.envelope.enabled,
+  }
+  emit('update-param', props.track.id, 'envelope', updated)
+}
+
+/**
+ * Handles an envelope parameter slider input.
+ *
+ * @param event - The input event from the range slider.
+ * @param param - Which envelope parameter to update.
+ * @param divisor - Divisor to convert integer slider value to float.
+ */
+function onEnvelopeParamInput(
+  event: Event,
+  param: keyof Omit<EnvelopeConfig, 'enabled'>,
+  divisor: number,
+): void {
+  const target = event.target as HTMLInputElement
+  const value = parseInt(target.value, 10) / divisor
+  const updated: EnvelopeConfig = {
+    ...props.track.envelope,
+    [param]: value,
+  }
+  emit('update-param', props.track.id, 'envelope', updated)
 }
 
 // ── Display helpers ───────────────────────────────────────────────

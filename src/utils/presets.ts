@@ -6,7 +6,8 @@
  * psychoacoustic phenomena like beating.
  */
 
-import type { WaveformType } from '../types/audio'
+import type { WaveformType, EnvelopeConfig } from '../types/audio'
+import { DEFAULT_ENVELOPE } from '../types/audio'
 import { useAudioEngine } from '../composables/useAudioEngine'
 
 // ── Preset interface ──────────────────────────────────────────────
@@ -25,6 +26,7 @@ export interface Preset {
     amplitude: number
     waveformType: WaveformType
     phase: number
+    envelope?: Partial<EnvelopeConfig>
   }>
 }
 
@@ -53,10 +55,19 @@ const PIANO_A4: Preset = {
   name: 'Piano A4',
   description: 'A4 fundamental + harmonics simulating a piano timbre',
   tracks: [
-    { frequency: 440, amplitude: 0.5, waveformType: 'sine', phase: 0 },
-    { frequency: 880, amplitude: 0.25, waveformType: 'sine', phase: 0 },
-    { frequency: 1320, amplitude: 0.15, waveformType: 'sine', phase: 0 },
-    { frequency: 1760, amplitude: 0.1, waveformType: 'sine', phase: 0 },
+    { frequency: 440, amplitude: 0.5, waveformType: 'sine', phase: 0, envelope: { enabled: true, attack: 0.01, decay: 0.5, sustain: 0.3, release: 0.5 } },
+    { frequency: 880, amplitude: 0.25, waveformType: 'sine', phase: 0, envelope: { enabled: true, attack: 0.01, decay: 0.5, sustain: 0.3, release: 0.5 } },
+    { frequency: 1320, amplitude: 0.15, waveformType: 'sine', phase: 0, envelope: { enabled: true, attack: 0.01, decay: 0.5, sustain: 0.3, release: 0.5 } },
+    { frequency: 1760, amplitude: 0.1, waveformType: 'sine', phase: 0, envelope: { enabled: true, attack: 0.01, decay: 0.5, sustain: 0.3, release: 0.5 } },
+  ],
+}
+
+/** Single note with a sharp attack and quick decay — no sustain. */
+const PIANO_STRIKE: Preset = {
+  name: 'Piano Strike',
+  description: 'Single A4 note with percussive ADSR envelope (fast decay, no sustain)',
+  tracks: [
+    { frequency: 440, amplitude: 0.8, waveformType: 'sine', phase: 0, envelope: { enabled: true, attack: 0.005, decay: 0.8, sustain: 0, release: 0.3 } },
   ],
 }
 
@@ -119,6 +130,7 @@ export const PRESETS: readonly Preset[] = [
   TUNING_FORK,
   MIDDLE_C,
   PIANO_A4,
+  PIANO_STRIKE,
   VIOLIN_A4,
   PERFECT_FIFTH,
   OCTAVE,
@@ -160,6 +172,9 @@ export function applyPreset(preset: Preset): void {
       amplitude: trackDef.amplitude,
       waveformType: trackDef.waveformType,
       phase: trackDef.phase,
+      envelope: trackDef.envelope
+        ? { ...DEFAULT_ENVELOPE, ...trackDef.envelope }
+        : { ...DEFAULT_ENVELOPE },
     })
   }
 }

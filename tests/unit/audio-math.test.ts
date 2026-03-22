@@ -15,12 +15,17 @@ import {
   melToHz,
   dbToLinear,
   linearToDb,
+  applyEnvelopeToSamples,
+  generateEnvelopeCurve,
+  computeEnvelopeValue,
   MIN_FREQUENCY,
   MAX_FREQUENCY,
   DEFAULT_FREQUENCY,
   DEFAULT_AMPLITUDE,
   DEFAULT_SAMPLE_RATE,
 } from '../../src/utils/audio-math'
+import type { EnvelopeConfig } from '../../src/types/audio'
+import { DEFAULT_ENVELOPE } from '../../src/types/audio'
 
 // ── Constants ──────────────────────────────────────────────────────
 
@@ -303,5 +308,155 @@ describe('dbToLinear / linearToDb', () => {
 
   it('linearToDb throws for negative', () => {
     expect(() => linearToDb(-1)).toThrow()
+  })
+})
+
+// ── ADSR Envelope ──────────────────────────────────────────────────
+
+describe('computeEnvelopeValue', () => {
+  const env: EnvelopeConfig = {
+    enabled: true,
+    attack: 0.1,
+    decay: 0.2,
+    sustain: 0.5,
+    release: 0.1,
+  }
+  const totalDuration = 1.0
+
+  it('starts at 0 at time 0', () => {
+    expect(computeEnvelopeValue(0, env, totalDuration)).toBeCloseTo(0, 5)
+  })
+
+  it('reaches 1 at end of attack', () => {
+    expect(computeEnvelopeValue(0.1, env, totalDuration)).toBeCloseTo(1, 5)
+  })
+
+  it('ramps linearly during attack', () => {
+    expect(computeEnvelopeValue(0.05, env, totalDuration)).toBeCloseTo(0.5, 5)
+  })
+
+  it('reaches sustain level at end of decay', () => {
+    expect(computeEnvelopeValue(0.3, env, totalDuration)).toBeCloseTo(0.5, 5)
+  })
+
+  it('holds at sustain level during sustain phase', () => {
+    expect(computeEnvelopeValue(0.5, env, totalDuration)).toBeCloseTo(0.5, 5)
+    expect(computeEnvelopeValue(0.7, env, totalDuration)).toBeCloseTo(0.5, 5)
+  })
+
+  it('reaches 0 at end of release (end of duration)', () => {
+    expect(computeEnvelopeValue(1.0, env, totalDuration)).toBeCloseTo(0, 5)
+  })
+
+  it('returns 0 for negative time', () => {
+    expect(computeEnvelopeValue(-0.1, env, totalDuration)).toBe(0)
+  })
+})
+
+describe('applyEnvelopeToSamples', () => {
+  const sampleRate = 1000 // 1000 samples/sec for easy math
+  const numSamples = 1000 // 1 second of audio
+
+  it('returns a new array of same length', () => {
+    const samples = new Float32Array(numSamples).fill(1)
+    const result = applyEnvelopeToSamples(samples, DEFAULT_ENVELOPE, sampleRate)
+    expect(result.length).toBe(numSamples)
+    expect(result).not.toBe(samples)
+  })
+
+  it('disabled envelope still applies when called directly', () => {
+    // applyEnvelopeToSamples does not check enabled flag — that is the caller's job
+    const env: EnvelopeConfig = { ...DEFAULT_ENVELOPE, enabled: false }
+    const samples = new Float32Array(numSamples).fill(1)
+    const result = applyEnvelopeToSamples(samples, env, sampleRate)
+    // Should still apply ADSR shape (function is pure, doesn't check enabled)
+    expect(result[0]).toBeCloseTo(0, 1)
+  })
+
+  it('attack ramps from 0 to peak', () => {
+    const env: EnvelopeConfig = {
+      enabled: true,
+      attack: 0.1,
+      decay: 0,
+      sustain: 1,
+      release: 0,
+    }
+    const samples = new Float32Array(numSamples).fill(1)
+    const result = applyEnvelopeToSamples(samples, env, sampleRate)
+    // At sample 0, should be 0
+    expect(result[0]).toBeCloseTo(0, 3)
+    // At sample 50 (0.05s), should be ~0.5
+    expect(result[50]).toBeCloseTo(0.5, 1)
+    // At sample 100 (0.1s), should be ~1.0
+    expect(result[100]).toBeCloseTo(1, 1)
+    // After attack, sustain at 1 so should stay at 1
+    expect(result[500]).toBeCloseTo(1, 1)
+  })
+
+  it('sustain holds at the sustain level', () => {
+    const env: EnvelopeConfig = {
+      enabled: true,
+      attack: 0.05,
+      decay: 0.05,
+      sustain: 0.6,
+      release: 0.05,
+    }
+    const samples = new Float32Array(numSamples).fill(1)
+    const result = applyEnvelopeToSamples(samples, env, sampleRate)
+    // After attack+decay (0.1s = sample 100), should be at sustain level
+    expect(result[200]).toBeCloseTo(0.6, 1)
+    expect(result[500]).toBeCloseTo(0.6, 1)
+  })
+
+  it('scales samples by envelope multiplier', () => {
+    const env: EnvelopeConfig = {
+      enabled: true,
+      attack: 0,
+      decay: 0,
+      sustain: 0.5,
+      release: 0,
+    }
+    const samples = new Float32Array(numSamples).fill(2)
+    const result = applyEnvelopeToSamples(samples, env, sampleRate)
+    // All samples should be 2 * 0.5 = 1 (except possibly first sample)
+    expect(result[500]).toBeCloseTo(1, 1)
+  })
+})
+
+describe('generateEnvelopeCurve', () => {
+  const sampleRate = 1000
+  const numSamples = 1000
+
+  it('returns correct number of samples', () => {
+    const result = generateEnvelopeCurve(DEFAULT_ENVELOPE, sampleRate, numSamples)
+    expect(result.length).toBe(numSamples)
+  })
+
+  it('values stay within [0, 1]', () => {
+    const env: EnvelopeConfig = {
+      enabled: true,
+      attack: 0.1,
+      decay: 0.2,
+      sustain: 0.5,
+      release: 0.3,
+    }
+    const result = generateEnvelopeCurve(env, sampleRate, numSamples)
+    for (let i = 0; i < result.length; i++) {
+      expect(result[i]).toBeGreaterThanOrEqual(0)
+      expect(result[i]).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('starts at 0 and peaks at 1 during attack', () => {
+    const env: EnvelopeConfig = {
+      enabled: true,
+      attack: 0.1,
+      decay: 0.2,
+      sustain: 0.5,
+      release: 0.1,
+    }
+    const result = generateEnvelopeCurve(env, sampleRate, numSamples)
+    expect(result[0]).toBeCloseTo(0, 3)
+    expect(result[100]).toBeCloseTo(1, 1)
   })
 })

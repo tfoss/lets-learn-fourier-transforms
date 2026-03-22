@@ -6,7 +6,7 @@
  * waveform generation, and decibel/linear scale transforms.
  */
 
-import type { WaveformType } from '../types/audio'
+import type { WaveformType, EnvelopeConfig } from '../types/audio'
 
 // ── Constants ──────────────────────────────────────────────────────
 
@@ -341,4 +341,109 @@ export function linearToDb(linear: number): number {
     throw new Error(`Linear amplitude must be positive, got ${linear}`)
   }
   return 20 * Math.log10(linear)
+}
+
+// ── ADSR Envelope ──────────────────────────────────────────────────
+
+/**
+ * Computes the envelope multiplier at a given time position.
+ *
+ * The envelope has four phases:
+ *  - Attack: linear ramp from 0 to 1
+ *  - Decay: linear ramp from 1 to sustain level
+ *  - Sustain: constant at sustain level
+ *  - Release: linear ramp from sustain to 0 (at end of total duration)
+ *
+ * @param time - Current time in seconds from the start.
+ * @param envelope - ADSR envelope parameters.
+ * @param totalDuration - Total duration of the sound in seconds.
+ * @returns Envelope multiplier in [0, 1].
+ */
+export function computeEnvelopeValue(
+  time: number,
+  envelope: EnvelopeConfig,
+  totalDuration: number,
+): number {
+  const { attack, decay, sustain, release } = envelope
+
+  if (time < 0) return 0
+
+  // Release begins at (totalDuration - release)
+  const releaseStart = Math.max(0, totalDuration - release)
+
+  // Attack phase
+  if (time < attack) {
+    return attack > 0 ? time / attack : 1
+  }
+
+  // Decay phase
+  const decayStart = attack
+  if (time < decayStart + decay) {
+    const decayProgress = decay > 0 ? (time - decayStart) / decay : 1
+    return 1 - (1 - sustain) * decayProgress
+  }
+
+  // Release phase
+  if (time >= releaseStart && release > 0) {
+    const releaseProgress = (time - releaseStart) / release
+    const clampedProgress = Math.min(1, releaseProgress)
+    return sustain * (1 - clampedProgress)
+  }
+
+  // Sustain phase
+  return sustain
+}
+
+/**
+ * Applies an ADSR envelope to waveform samples.
+ *
+ * Multiplies each sample by the envelope value at that point in time.
+ * Returns a new Float32Array; the original is not modified.
+ *
+ * @param samples - Input waveform samples.
+ * @param envelope - ADSR envelope configuration.
+ * @param sampleRate - Sample rate in Hz.
+ * @returns New Float32Array with envelope applied.
+ */
+export function applyEnvelopeToSamples(
+  samples: Float32Array,
+  envelope: EnvelopeConfig,
+  sampleRate: number,
+): Float32Array {
+  const result = new Float32Array(samples.length)
+  const totalDuration = samples.length / sampleRate
+
+  for (let i = 0; i < samples.length; i++) {
+    const time = i / sampleRate
+    const multiplier = computeEnvelopeValue(time, envelope, totalDuration)
+    result[i] = samples[i] * multiplier
+  }
+
+  return result
+}
+
+/**
+ * Generates the envelope curve itself as a Float32Array for visualization.
+ *
+ * Each sample represents the envelope multiplier (0-1) at that time point.
+ *
+ * @param envelope - ADSR envelope configuration.
+ * @param sampleRate - Sample rate in Hz.
+ * @param numSamples - Number of samples to generate.
+ * @returns Float32Array of envelope values in [0, 1].
+ */
+export function generateEnvelopeCurve(
+  envelope: EnvelopeConfig,
+  sampleRate: number,
+  numSamples: number,
+): Float32Array {
+  const result = new Float32Array(numSamples)
+  const totalDuration = numSamples / sampleRate
+
+  for (let i = 0; i < numSamples; i++) {
+    const time = i / sampleRate
+    result[i] = computeEnvelopeValue(time, envelope, totalDuration)
+  }
+
+  return result
 }

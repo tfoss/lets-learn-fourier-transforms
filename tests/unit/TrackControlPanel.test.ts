@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import TrackControlPanel from '../../src/components/TrackControlPanel.vue'
 import type { TrackConfig } from '../../src/types/audio'
-import { createTrackId } from '../../src/types/audio'
+import { createTrackId, DEFAULT_ENVELOPE } from '../../src/types/audio'
 
 // ── Web Audio API mocks ────────────────────────────────────────────
 
@@ -93,6 +93,7 @@ function createTestTrack(overrides?: Partial<TrackConfig>): TrackConfig {
     color: '#3b82f6',
     isMuted: false,
     isSolo: false,
+    envelope: { ...DEFAULT_ENVELOPE },
     ...overrides,
   }
 }

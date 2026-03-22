@@ -15,7 +15,9 @@ import {
   type TrackId,
   type WaveformType,
   type FFTData,
+  type EnvelopeConfig,
   createTrackId,
+  DEFAULT_ENVELOPE,
 } from '../types/audio'
 import { DEFAULT_FREQUENCY, DEFAULT_AMPLITUDE } from '../utils/audio-math'
 import { getTrackColor } from '../utils/color-palette'
@@ -44,6 +46,9 @@ let masterAnalyserNode: AnalyserNode | null = null
 const tracks: Ref<TrackConfig[]> = ref([])
 const isPlaying: Ref<boolean> = ref(false)
 const masterVolume: Ref<number> = ref(1)
+
+/** Set of TrackIds that currently have an active oscillator. */
+const playingTrackIds: Ref<Set<TrackId>> = ref(new Set())
 
 /** Map from TrackId to its live audio nodes. */
 const trackNodesMap = new Map<TrackId, TrackNodes>()
@@ -176,6 +181,7 @@ function createTrack(config?: Partial<TrackConfig>): TrackId {
     color: config?.color ?? getTrackColor(index),
     isMuted: config?.isMuted ?? false,
     isSolo: config?.isSolo ?? false,
+    envelope: config?.envelope ?? { ...DEFAULT_ENVELOPE },
   }
 
   // Build audio nodes
@@ -217,6 +223,9 @@ function removeTrack(id: TrackId): void {
     nodes.analyserNode.disconnect()
     trackNodesMap.delete(id)
   }
+  const next = new Set(playingTrackIds.value)
+  next.delete(id)
+  playingTrackIds.value = next
   tracks.value = tracks.value.filter((t) => t.id !== id)
 }
 
@@ -307,6 +316,10 @@ function updateTrackParam(
       config.color = value as string
       break
 
+    case 'envelope':
+      config.envelope = value as EnvelopeConfig
+      break
+
     default:
       break
   }
@@ -375,12 +388,33 @@ function playTrack(id: TrackId): void {
   nodes.oscillator = osc
   nodes.isOscillatorStarted = true
 
+  playingTrackIds.value = new Set([...playingTrackIds.value, id])
+
+  // Schedule ADSR envelope on the gain node if enabled
+  if (config.envelope.enabled) {
+    const ctx = getOrCreateContext()
+    const now = ctx.currentTime
+    const amp = effectiveAmplitude(config)
+    const env = config.envelope
+    nodes.gainNode.gain.cancelScheduledValues(now)
+    nodes.gainNode.gain.setValueAtTime(0, now)
+    nodes.gainNode.gain.linearRampToValueAtTime(amp, now + env.attack)
+    nodes.gainNode.gain.linearRampToValueAtTime(
+      amp * env.sustain,
+      now + env.attack + env.decay,
+    )
+    // Sustain holds until release (triggered in stopTrack)
+  }
+
   if (config.duration > 0) {
     osc.start(0)
     osc.stop(getOrCreateContext().currentTime + config.duration)
     osc.onended = () => {
       nodes.oscillator = null
       nodes.isOscillatorStarted = false
+      const next = new Set(playingTrackIds.value)
+      next.delete(id)
+      playingTrackIds.value = next
     }
   } else {
     osc.start(0)
@@ -395,7 +429,34 @@ function playTrack(id: TrackId): void {
 function stopTrack(id: TrackId): void {
   const nodes = trackNodesMap.get(id)
   if (!nodes) return
-  stopOscillator(nodes)
+
+  const idx = findTrackIndex(id)
+  const config = idx !== -1 ? tracks.value[idx] : null
+
+  // If envelope is enabled, schedule a release ramp before stopping
+  if (config?.envelope.enabled && nodes.oscillator && nodes.isOscillatorStarted) {
+    const ctx = getOrCreateContext()
+    const now = ctx.currentTime
+    const env = config.envelope
+    nodes.gainNode.gain.cancelScheduledValues(now)
+    nodes.gainNode.gain.setValueAtTime(nodes.gainNode.gain.value, now)
+    nodes.gainNode.gain.linearRampToValueAtTime(0, now + env.release)
+    try {
+      nodes.oscillator.stop(now + env.release)
+    } catch {
+      // Already stopped
+    }
+    nodes.oscillator.onended = () => {
+      nodes.oscillator = null
+      nodes.isOscillatorStarted = false
+    }
+  } else {
+    stopOscillator(nodes)
+  }
+
+  const next = new Set(playingTrackIds.value)
+  next.delete(id)
+  playingTrackIds.value = next
 }
 
 /**
@@ -491,6 +552,7 @@ async function cleanup(): Promise<void> {
   tracks.value = []
   isPlaying.value = false
   masterVolume.value = 1
+  playingTrackIds.value = new Set()
   nextTrackIndex = 0
 
   if (masterGainNode) {
@@ -517,12 +579,23 @@ async function cleanup(): Promise<void> {
  *
  * @returns Audio engine API.
  */
+/**
+ * Returns whether a specific track is currently playing.
+ *
+ * @param id - The track ID to check.
+ * @returns True if the track's oscillator is active.
+ */
+function isTrackPlaying(id: TrackId): boolean {
+  return playingTrackIds.value.has(id)
+}
+
 export function useAudioEngine() {
   return {
     // Reactive state
     tracks,
     isPlaying,
     masterVolume,
+    playingTrackIds,
 
     // Context management
     resumeContext,
@@ -537,6 +610,7 @@ export function useAudioEngine() {
     stopTrack,
     playAll,
     stopAll,
+    isTrackPlaying,
 
     // Volume
     setMasterVolume,

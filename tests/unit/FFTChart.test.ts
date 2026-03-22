@@ -22,6 +22,7 @@ const mockTracks = ref([
     color: '#3b82f6',
     isMuted: false,
     isSolo: false,
+    envelope: { enabled: false, attack: 0.01, decay: 0.3, sustain: 0.5, release: 0.3 },
   },
 ])
 
