@@ -32,13 +32,10 @@ import { computed } from 'vue'
 import type { TrackConfig } from '../types/audio'
 import { generateWaveformSamples, applyEnvelopeToSamples, DEFAULT_SAMPLE_RATE } from '../utils/audio-math'
 import { frequencyToNoteName } from '../utils/audio-math'
+import { useTimeScale, formatTimeScale } from '../composables/useTimeScale'
 import WaveformCanvas from './WaveformCanvas.vue'
 
-/**
- * Number of samples to generate for the static waveform preview.
- * Shows a few complete cycles of the wave so the shape is clearly visible.
- */
-const STATIC_SAMPLE_COUNT = 1024
+const { timeScaleMs, sampleCount } = useTimeScale()
 
 const props = defineProps<{
   track: TrackConfig
@@ -60,15 +57,7 @@ const trackLabel = computed(() => {
  * Human-readable label for the time window shown in the waveform.
  * e.g., "23.2 ms" for 1024 samples at 44100 Hz.
  */
-const timeFrameLabel = computed(() => {
-  const durationSec = STATIC_SAMPLE_COUNT / DEFAULT_SAMPLE_RATE
-  const durationMs = durationSec * 1000
-  if (durationMs >= 1) {
-    return `${durationMs.toFixed(1)} ms`
-  }
-  const durationUs = durationSec * 1_000_000
-  return `${durationUs.toFixed(1)} \u00B5s`
-})
+const timeFrameLabel = computed(() => formatTimeScale(timeScaleMs.value))
 
 /**
  * Safely converts frequency to a note name, returning empty string on error.
@@ -91,7 +80,7 @@ function safeNoteName(frequency: number): string {
  */
 function generateStaticPreview(): Float32Array {
   if (props.track.isMuted) {
-    return new Float32Array(STATIC_SAMPLE_COUNT)
+    return new Float32Array(sampleCount.value)
   }
   let samples = generateWaveformSamples(
     props.track.waveformType,
@@ -99,7 +88,7 @@ function generateStaticPreview(): Float32Array {
     props.track.amplitude,
     props.track.phase,
     DEFAULT_SAMPLE_RATE,
-    STATIC_SAMPLE_COUNT,
+    sampleCount.value,
   )
   if (props.track.envelope.enabled) {
     samples = applyEnvelopeToSamples(samples, props.track.envelope, DEFAULT_SAMPLE_RATE)

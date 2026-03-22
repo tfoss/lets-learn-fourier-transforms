@@ -35,20 +35,17 @@ import {
   DEFAULT_SAMPLE_RATE,
 } from '../utils/audio-math'
 import { useAudioEngine } from '../composables/useAudioEngine'
+import { useTimeScale, formatTimeScale } from '../composables/useTimeScale'
 import WaveformCanvas from './WaveformCanvas.vue'
 
-/** Number of samples to generate for static preview. */
-const STATIC_SAMPLE_COUNT = 1024
+const { timeScaleMs, sampleCount } = useTimeScale()
 
 const { tracks } = useAudioEngine()
 
 /**
  * Human-readable label for the time window shown in the waveform.
  */
-const timeFrameLabel = computed(() => {
-  const durationMs = (STATIC_SAMPLE_COUNT / DEFAULT_SAMPLE_RATE) * 1000
-  return `${durationMs.toFixed(1)} ms`
-})
+const timeFrameLabel = computed(() => formatTimeScale(timeScaleMs.value))
 
 /**
  * Generates a static superposition of all unmuted track waveforms.
@@ -59,7 +56,7 @@ function generateStaticSuperposition(): Float32Array {
   const activeTracks = tracks.value.filter((t) => !t.isMuted)
 
   if (activeTracks.length === 0) {
-    return new Float32Array(STATIC_SAMPLE_COUNT)
+    return new Float32Array(sampleCount.value)
   }
 
   const waveforms = activeTracks.map((t) => {
@@ -69,7 +66,7 @@ function generateStaticSuperposition(): Float32Array {
       t.amplitude,
       t.phase,
       DEFAULT_SAMPLE_RATE,
-      STATIC_SAMPLE_COUNT,
+      sampleCount.value,
     )
     if (t.envelope.enabled) {
       samples = applyEnvelopeToSamples(samples, t.envelope, DEFAULT_SAMPLE_RATE)

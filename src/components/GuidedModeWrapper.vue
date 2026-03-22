@@ -1,25 +1,27 @@
 <script setup lang="ts">
 /**
- * GuidedModeWrapper — Conditionally renders guided or sandbox content.
+ * GuidedModeWrapper — Renders the shared track UI for both modes.
  *
- * When mode is 'guided', shows the GuidedStepView with step-specific
- * controls. When mode is 'sandbox', shows the full sandbox UI with
- * each track's waveform and controls aligned in a unified row.
+ * In guided mode, adds the GuidedStepView overlay (progress, explanation,
+ * navigation) above the same track components used in sandbox mode.
+ * This ensures both modes share identical UI components — no duplication.
  */
 
 import { computed } from 'vue'
 import type { AppMode } from '../types/ui'
 import type { TrackConfig, TrackId } from '../types/audio'
 import { useAudioEngine } from '../composables/useAudioEngine'
+import { useGuidedMode } from '../composables/useGuidedMode'
 import GuidedStepView from './GuidedStepView.vue'
 import MasterControls from './MasterControls.vue'
+import TimeScaleControl from './TimeScaleControl.vue'
 import TrackRow from './TrackRow.vue'
 import SuperpositionWaveform from './SuperpositionWaveform.vue'
 
 /** Maximum number of tracks allowed. */
 const MAX_TRACKS = 8
 
-defineProps<{
+const props = defineProps<{
   /** Current application mode. */
   mode: AppMode
 }>()
@@ -35,15 +37,19 @@ const {
   isTrackPlaying,
 } = useAudioEngine()
 
+const { currentStep, isComplete } = useGuidedMode()
+
 /** Current number of tracks. */
 const trackCount = computed(() => tracks.value.length)
 
 /** Whether the maximum track count has been reached. */
 const isMaxTracksReached = computed(() => tracks.value.length >= MAX_TRACKS)
 
+/** Whether to show the add track bar. Always in sandbox, never in guided. */
+const showAddTrack = computed(() => props.mode === 'sandbox')
+
 /**
  * Adds a new track with default settings.
- * Resumes the audio context first (browser autoplay policy).
  */
 async function onAddTrack(): Promise<void> {
   if (isMaxTracksReached.value) return
@@ -53,10 +59,6 @@ async function onAddTrack(): Promise<void> {
 
 /**
  * Updates a track parameter via the audio engine.
- *
- * @param id - The track to update.
- * @param param - The parameter name.
- * @param value - The new value.
  */
 function onUpdateParam(
   id: TrackId,
@@ -68,8 +70,6 @@ function onUpdateParam(
 
 /**
  * Starts playback on a single track.
- *
- * @param id - The track to play.
  */
 async function onPlay(id: TrackId): Promise<void> {
   await resumeContext()
@@ -78,8 +78,6 @@ async function onPlay(id: TrackId): Promise<void> {
 
 /**
  * Stops playback on a single track.
- *
- * @param id - The track to stop.
  */
 function onStop(id: TrackId): void {
   stopTrack(id)
@@ -87,8 +85,6 @@ function onStop(id: TrackId): void {
 
 /**
  * Removes a track.
- *
- * @param id - The track to remove.
  */
 function onRemove(id: TrackId): void {
   removeTrack(id)
@@ -96,16 +92,23 @@ function onRemove(id: TrackId): void {
 </script>
 
 <template>
-  <div data-testid="guided-mode-wrapper">
-    <!-- Guided mode: step-by-step tutorial -->
+  <div class="flex flex-col gap-4 p-4" data-testid="guided-mode-wrapper">
+    <!-- Guided mode overlay: progress, explanation, navigation -->
     <GuidedStepView v-if="mode === 'guided'" />
 
-    <!-- Sandbox mode: unified track rows -->
-    <div v-else class="flex flex-col gap-4 p-4" data-testid="sandbox-content">
-      <MasterControls />
+    <!-- Shared track UI (used by both modes) -->
+    <template v-if="mode === 'sandbox' || (mode === 'guided' && !isComplete)">
+      <div class="flex items-center gap-4">
+        <MasterControls class="flex-1" />
+        <TimeScaleControl />
+      </div>
 
-      <!-- Add Track bar -->
-      <div class="flex items-center justify-between" data-testid="track-control-list">
+      <!-- Add Track bar (sandbox only) -->
+      <div
+        v-if="showAddTrack"
+        class="flex items-center justify-between"
+        data-testid="track-control-list"
+      >
         <button
           class="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
           :disabled="isMaxTracksReached"
@@ -121,13 +124,13 @@ function onRemove(id: TrackId): void {
 
       <!-- Empty state -->
       <div
-        v-if="tracks.length === 0"
+        v-if="tracks.length === 0 && mode === 'sandbox'"
         class="flex items-center justify-center h-32 text-gray-500 text-sm rounded-lg border border-dashed border-gray-700"
       >
         Click 'Add Track' to get started
       </div>
 
-      <!-- Unified track rows: waveform + controls aligned -->
+      <!-- Track rows -->
       <TrackRow
         v-for="(track, index) in tracks"
         :key="track.id"
@@ -140,8 +143,8 @@ function onRemove(id: TrackId): void {
         @remove="onRemove"
       />
 
-      <!-- Superposition waveform at bottom -->
+      <!-- Superposition waveform -->
       <SuperpositionWaveform v-if="tracks.length > 0" />
-    </div>
+    </template>
   </div>
 </template>
