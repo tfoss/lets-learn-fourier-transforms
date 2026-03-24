@@ -380,8 +380,15 @@ function playTrack(id: TrackId): void {
   const nodes = trackNodesMap.get(id)
   if (!nodes) return
 
-  // If oscillator is already running, skip
-  if (nodes.oscillator && nodes.isOscillatorStarted) return
+  // If oscillator is already running, restart it if envelope is enabled
+  // so the ADSR gets applied from the beginning
+  if (nodes.oscillator && nodes.isOscillatorStarted) {
+    if (config.envelope.enabled) {
+      stopOscillator(nodes)
+    } else {
+      return
+    }
+  }
 
   // Create a fresh oscillator
   const osc = createOscillatorForTrack(config, nodes)
