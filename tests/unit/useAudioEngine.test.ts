@@ -12,6 +12,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 function createMockAudioParam(initialValue = 0) {
   return {
     value: initialValue,
+    cancelScheduledValues: vi.fn(),
     setValueAtTime: vi.fn(function (this: { value: number }, v: number) {
       this.value = v
       return this

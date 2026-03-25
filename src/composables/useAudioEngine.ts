@@ -443,10 +443,18 @@ function playTrack(id: TrackId): void {
     osc.stop(now + totalDuration)
     osc.onended = onOscillatorEnded
   } else if (config.duration > 0) {
+    // Reset gain in case a previous ADSR left it at 0
+    const ctx2 = getOrCreateContext()
+    nodes.gainNode.gain.cancelScheduledValues(ctx2.currentTime)
+    nodes.gainNode.gain.setValueAtTime(effectiveAmplitude(config), ctx2.currentTime)
     osc.start(0)
-    osc.stop(getOrCreateContext().currentTime + config.duration)
+    osc.stop(ctx2.currentTime + config.duration)
     osc.onended = onOscillatorEnded
   } else {
+    // Reset gain in case a previous ADSR left it at 0
+    const ctx3 = getOrCreateContext()
+    nodes.gainNode.gain.cancelScheduledValues(ctx3.currentTime)
+    nodes.gainNode.gain.setValueAtTime(effectiveAmplitude(config), ctx3.currentTime)
     osc.start(0)
   }
 }
