@@ -89,8 +89,7 @@ export function drawGrid(
     ctx.lineTo(x, height)
     ctx.stroke()
 
-    const label = formatFrequencyLabel(freq)
-    ctx.fillText(label, x, height - 4)
+    // Labels are rendered as HTML overlays in FFTChart.vue to avoid overlap
   }
 }
 

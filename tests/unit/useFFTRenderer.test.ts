@@ -132,11 +132,11 @@ describe('drawGrid', () => {
     expect(ctx.stroke).toHaveBeenCalled()
   })
 
-  it('draws Hz labels by calling fillText', () => {
+  it('does not draw canvas text labels (labels are HTML overlays)', () => {
     const ctx = createMockContext()
     drawGrid(ctx, 800, 400, DEFAULT_FFT_DRAW_OPTIONS)
 
-    expect(ctx.fillText).toHaveBeenCalled()
+    expect(ctx.fillText).not.toHaveBeenCalled()
   })
 
   it('sets grid color from options', () => {

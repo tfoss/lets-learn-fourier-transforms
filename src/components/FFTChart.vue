@@ -83,15 +83,15 @@ const hoveredPeak = ref<Peak | null>(null)
 
 // ── Musical note markers for x-axis ──────────────────────────────
 
-/** Key musical note frequencies to mark on the x-axis. */
+/** Combined note + frequency markers for the x-axis. */
 const NOTE_MARKERS = [
-  { note: 'C2', frequency: 65.41 },
-  { note: 'C3', frequency: 130.81 },
-  { note: 'C4', frequency: 261.63 },
-  { note: 'A4', frequency: 440 },
-  { note: 'C5', frequency: 523.25 },
-  { note: 'C6', frequency: 1046.5 },
-  { note: 'C7', frequency: 2093 },
+  { note: 'C2', frequency: 65.41, label: '65' },
+  { note: 'C3', frequency: 130.81, label: '131' },
+  { note: 'C4', frequency: 261.63, label: '262' },
+  { note: 'A4', frequency: 440, label: '440' },
+  { note: 'C5', frequency: 523.25, label: '523' },
+  { note: 'C6', frequency: 1046.5, label: '1k' },
+  { note: 'C7', frequency: 2093, label: '2.1k' },
 ]
 
 /** Frequency tolerance for matching a peak to a track (in Hz). */
@@ -295,19 +295,20 @@ onUnmounted(() => {
       </div>
     </template>
 
-    <!-- Note labels on x-axis -->
+    <!-- Note + frequency labels on x-axis -->
     <template v-if="showNoteLabels">
       <div
         v-for="marker in NOTE_MARKERS"
         :key="marker.note"
-        class="absolute text-xs text-gray-400 pointer-events-none"
+        class="absolute pointer-events-none text-center leading-tight"
         :style="{
           left: `${frequencyToX(marker.frequency, canvasRef?.getBoundingClientRect()?.width ?? 0, drawOptions.minFrequency, drawOptions.maxFrequency, drawOptions.useLogScale)}px`,
           bottom: '2px',
           transform: 'translateX(-50%)',
         }"
       >
-        {{ marker.note }}
+        <div class="text-[10px] text-gray-300 font-medium">{{ marker.note }}</div>
+        <div class="text-[9px] text-gray-500">{{ marker.label }}</div>
       </div>
     </template>
   </div>

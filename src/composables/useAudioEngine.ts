@@ -356,6 +356,23 @@ function applyGain(config: TrackConfig, nodes: TrackNodes | undefined): void {
 }
 
 /**
+ * Resets a track's gain node, clearing any scheduled ADSR ramps
+ * and restoring the gain to the track's effective amplitude.
+ *
+ * @param config - Track configuration.
+ * @param nodes - Track's audio nodes.
+ */
+function resetGainToAmplitude(config: TrackConfig, nodes: TrackNodes): void {
+  const gain = effectiveAmplitude(config)
+  try {
+    nodes.gainNode.gain.cancelScheduledValues(0)
+  } catch {
+    // Some browsers may throw if no scheduled values exist
+  }
+  nodes.gainNode.gain.value = gain
+}
+
+/**
  * Reapplies gain values to all tracks (needed after solo changes).
  */
 function reapplyAllGains(): void {
@@ -444,17 +461,13 @@ function playTrack(id: TrackId): void {
     osc.onended = onOscillatorEnded
   } else if (config.duration > 0) {
     // Reset gain in case a previous ADSR left it at 0
-    const ctx2 = getOrCreateContext()
-    nodes.gainNode.gain.cancelScheduledValues(ctx2.currentTime)
-    nodes.gainNode.gain.setValueAtTime(effectiveAmplitude(config), ctx2.currentTime)
+    resetGainToAmplitude(config, nodes)
     osc.start(0)
-    osc.stop(ctx2.currentTime + config.duration)
+    osc.stop(getOrCreateContext().currentTime + config.duration)
     osc.onended = onOscillatorEnded
   } else {
     // Reset gain in case a previous ADSR left it at 0
-    const ctx3 = getOrCreateContext()
-    nodes.gainNode.gain.cancelScheduledValues(ctx3.currentTime)
-    nodes.gainNode.gain.setValueAtTime(effectiveAmplitude(config), ctx3.currentTime)
+    resetGainToAmplitude(config, nodes)
     osc.start(0)
   }
 }
